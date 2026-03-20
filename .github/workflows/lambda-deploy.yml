@@ -1,0 +1,53 @@
+name: Lambda Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  NODE_VERSION: '22'
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy (${{ matrix.function }})
+    runs-on: ubuntu-latest
+    environment: dev
+    strategy:
+      matrix:
+        function: [capture, search, graph, surfacing]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        working-directory: src
+        run: npm ci
+
+      - name: Build
+        working-directory: src
+        run: npm run build -- --filter=${{ matrix.function }}
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Package
+        working-directory: src/functions/${{ matrix.function }}
+        run: zip -r ../../../${{ matrix.function }}.zip .
+
+      - name: Deploy
+        run: |
+          aws lambda update-function-code \
+            --function-name ssb-dev-${{ matrix.function }} \
+            --zip-file fileb://${{ matrix.function }}.zip
