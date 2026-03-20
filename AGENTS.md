@@ -40,6 +40,8 @@ src/
 
 frontend/                 → Static Next.js export for CloudFront + S3
 
+scripts/                  → Migration, benchmarks, utilities
+
 docs/
   decisions/              → Architecture Decision Records (ADRs)
 

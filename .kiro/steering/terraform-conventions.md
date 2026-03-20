@@ -60,7 +60,7 @@ Every variable MUST have:
 
 - Backend: S3 bucket with versioning + DynamoDB table for locking
 - Key pattern: `{project_name}/{environment}/terraform.tfstate`
-- Bootstrap: `scripts/bootstrap-backend.sh` creates the backend resources
+- Bootstrap: `infra/bootstrap/` — separate Terraform root that creates the backend resources (S3 bucket + DynamoDB lock table). Run once before `terraform init` in environment roots.
 
 ## Security rules
 

@@ -8,7 +8,7 @@ This file defines the exact schema for the DynamoDB knowledge graph table. All c
 
 ## Table configuration
 
-- Table name: `{project_name}-KnowledgeGraph`
+- Table name: `{project_name}-{env}-knowledge-graph`
 - Billing mode: PAY_PER_REQUEST
 - Hash key: `PK` (String)
 - Range key: `SK` (String)
@@ -123,7 +123,7 @@ TTL: 90 days from creation (Unix timestamp). DynamoDB auto-deletes expired items
 
 ## S3 content bucket
 
-- Bucket name: `{project_name}-content`
+- Bucket name: `{project_name}-{env}-content`
 - Key pattern: `content/{node_type}/{slug}/body.mdx` (Spanish)
 - Key pattern: `content/{node_type}/{slug}/body.en.mdx` (English)
 - Versioning: enabled

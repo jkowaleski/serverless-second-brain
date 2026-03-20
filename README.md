@@ -64,7 +64,10 @@ flowchart TB
   LCapture -- "embeddings" --> BRE
 
   LSearch -- "queries" --> DDB
+  LSearch -- "query embedding" --> BRE
   LGraph -- "reads edges" --> DDB
+  LSurface -- "reads" --> DDB
+  LSurface -- "notifies" --> SNS[SNS]
 ```
 
 ## Two doors, same brain
@@ -146,6 +149,7 @@ src/
 
 frontend/                 → Static Next.js export
 
+scripts/                  → Migration, benchmarks, utilities
 docs/decisions/           → ADRs
 .kiro/steering/           → SDD specifications
 .github/workflows/        → CI/CD (GitHub Actions OIDC)

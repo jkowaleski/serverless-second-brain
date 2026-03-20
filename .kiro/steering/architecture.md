@@ -78,3 +78,42 @@ Each phase is independently deployable and adds value without requiring subseque
 - **Phase 2**: Search + Graph + Frontend (Search Lambda + Graph Lambda + CloudFront)
 - **Phase 3**: Agent door (AgentCore Gateway + Runtime + MCP tools)
 - **Phase 4**: Proactive surfacing (EventBridge + Surfacing Lambda + SNS)
+
+## Design notes
+
+### Extensions beyond the essay
+
+The following were added during specification but are not in the original essay:
+
+- **`list_nodes` MCP tool**: the essay lists 5 tools (read_node, add_node, connect_nodes, search, flag_stale). `list_nodes` was added as a natural read operation — agents need to browse/filter nodes, not just search or read by slug.
+- **`GET /health` endpoint**: standard operational endpoint not in the essay but required for monitoring and load balancer health checks.
+- **Observability (issue #14)**: the essay implies CloudWatch logging throughout but doesn't consolidate it. Added as a cross-cutting concern with dashboards, alarms, X-Ray tracing, and cost tracking.
+
+### Intentional omissions
+
+- **No UPDATE endpoint**: the system has no PUT/PATCH for modifying existing node metadata. Updates to existing content happen through the jonmatum.com MDX workflow (git commits). The serverless backend is optimized for capture (create) and read — not editing. The AUDIT item schema supports `action: "update"` for future use if needed.
+- **No DELETE operations**: agents and API clients cannot delete nodes or edges. Deletion is a manual/admin operation. Agents can only `flag_stale` for human review.
+- **WAF**: intentionally deferred. Can be added to API Gateway and CloudFront later without architectural changes.
+- **Edge functions**: intentionally deferred. CloudFront Functions or Lambda@Edge can be added for A/B testing or personalization later.
+
+### `connect_nodes` routing decision
+
+`connect_nodes` is routed to the Capture Lambda (not Graph Lambda) because:
+1. It's a write operation — Capture Lambda already has DynamoDB write permissions and audit trail logic
+2. Graph Lambda is read-only by design — adding write paths would violate single responsibility
+3. Edge creation may trigger Bedrock to validate the relationship (future enhancement)
+
+### Cost baseline (per-service breakdown from essay)
+
+For observability comparison (issue #14):
+
+| Service | Idle | Moderate (100 req/day) | High (1,000 req/day) |
+|---|---|---|---|
+| DynamoDB on-demand | $0.00 | ~$0.25 | ~$2.50 |
+| Lambda | $0.00 | ~$0.01 | ~$0.10 |
+| API Gateway | $0.00 | ~$0.04 | ~$0.35 |
+| S3 + CloudFront | ~$0.50 | ~$0.60 | ~$1.00 |
+| Bedrock (embeddings) | $0.00 | ~$0.50 | ~$2.00 |
+| Bedrock (chat/agent) | $0.00 | ~$1.00 | ~$5.00 |
+| EventBridge + SNS | ~$0.01 | ~$0.01 | ~$0.01 |
+| Step Functions | $0.00 | ~$0.03 | ~$0.25 |

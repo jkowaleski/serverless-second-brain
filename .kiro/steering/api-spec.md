@@ -47,7 +47,8 @@ Creates a new knowledge node. Triggers the Step Functions capture pipeline.
   "summary_en": "...",
   "tags": ["aws", "lambda"],
   "concepts": ["aws-lambda", "aws-api-gateway"],
-  "created_at": "2026-03-19T10:30:00Z"
+  "created_at": "2026-03-19T10:30:00Z",
+  "updated_at": "2026-03-19T10:30:00Z"
 }
 ```
 
