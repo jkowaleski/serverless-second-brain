@@ -55,6 +55,7 @@ export interface CaptureRequest {
   url?: string;
   type?: string;
   language?: "es" | "en";
+  actor?: string;
 }
 
 export interface CaptureResponse {

@@ -22,6 +22,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const slug = generateSlug(metadata.title);
     const now = new Date().toISOString();
     const nodeType = input.type ?? "concept";
+    const actor = input.actor ?? "human";
 
     // Check duplicate
     const existing = await getNode(slug);
@@ -45,7 +46,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       tags: metadata.tags,
       created_at: now,
       updated_at: now,
-      created_by: "human",
+      created_by: actor,
       word_count_es: input.language === "es" ? input.text.split(/\s+/).length : 0,
       word_count_en: input.language === "en" ? input.text.split(/\s+/).length : 0,
     };
@@ -70,7 +71,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         edge_type: "related",
         weight: 1.0,
         created_at: now,
-        created_by: "human",
+        created_by: actor,
       };
       await putEdge(edge);
     }
@@ -80,7 +81,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       PK: `AUDIT#${now}`,
       SK: `NODE#${slug}`,
       action: "create",
-      actor: "human",
+      actor,
       changes: { node_type: nodeType, status: "seed" },
       ttl: Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60,
     };

@@ -16,6 +16,7 @@ export const handler = async (event: PersistInput): Promise<PersistOutput> => {
   const { input, metadata, slug } = event;
   const now = new Date().toISOString();
   const nodeType = input.type ?? "concept";
+  const actor = input.actor ?? "human";
 
   const meta: MetaItem = {
     PK: `NODE#${slug}`,
@@ -32,7 +33,7 @@ export const handler = async (event: PersistInput): Promise<PersistOutput> => {
     tags: metadata.tags,
     created_at: now,
     updated_at: now,
-    created_by: "human",
+    created_by: actor,
     word_count_es: input.language === "es" ? input.text.split(/\s+/).length : 0,
     word_count_en: input.language === "en" ? input.text.split(/\s+/).length : 0,
   };
@@ -44,7 +45,7 @@ export const handler = async (event: PersistInput): Promise<PersistOutput> => {
     PK: `AUDIT#${now}`,
     SK: `NODE#${slug}`,
     action: "create",
-    actor: "human",
+    actor,
     changes: { node_type: nodeType, status: "seed" },
     ttl: Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60,
   };

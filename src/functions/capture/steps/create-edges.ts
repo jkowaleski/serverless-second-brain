@@ -10,6 +10,7 @@ interface EdgesInput {
 
 export const handler = async (event: EdgesInput): Promise<CaptureResponse> => {
   const { input, metadata, slug, now } = event;
+  const actor = input.actor ?? "human";
 
   for (const target of metadata.concepts) {
     const fwd: EdgeItem = {
@@ -18,7 +19,7 @@ export const handler = async (event: EdgesInput): Promise<CaptureResponse> => {
       edge_type: "related",
       weight: 1.0,
       created_at: now,
-      created_by: "human",
+      created_by: actor,
     };
     const rev: EdgeItem = {
       PK: `NODE#${target}`,
@@ -26,7 +27,7 @@ export const handler = async (event: EdgesInput): Promise<CaptureResponse> => {
       edge_type: "related",
       weight: 1.0,
       created_at: now,
-      created_by: "human",
+      created_by: actor,
     };
     await Promise.all([putEdge(fwd), putEdge(rev)]);
   }
