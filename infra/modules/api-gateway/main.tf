@@ -203,7 +203,7 @@ resource "aws_api_gateway_integration" "capture_sfn" {
   http_method             = aws_api_gateway_method.capture_post.http_method
   integration_http_method = "POST"
   type                    = "AWS"
-  uri                     = "arn:aws:apigateway:${data.aws_region.current.name}:states:action/StartSyncExecution"
+  uri                     = "arn:aws:apigateway:${data.aws_region.current.id}:states:action/StartSyncExecution"
   credentials             = aws_iam_role.apigw_sfn.arn
 
   request_templates = {
