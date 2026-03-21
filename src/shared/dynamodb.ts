@@ -37,7 +37,7 @@ export async function putAudit(item: AuditItem): Promise<void> {
   }));
 }
 
-export async function listNodeSlugs(): Promise<string[]> {
+export async function listNodeSlugs(limit = 200): Promise<string[]> {
   const slugs: string[] = [];
   let lastKey: Record<string, unknown> | undefined;
 
@@ -49,12 +49,13 @@ export async function listNodeSlugs(): Promise<string[]> {
       ExpressionAttributeValues: { ":sk": "META" },
       ProjectionExpression: "slug",
       ExclusiveStartKey: lastKey,
+      Limit: Math.min(limit - slugs.length, 100),
     }));
     for (const item of result.Items ?? []) {
       slugs.push((item as { slug: string }).slug);
     }
     lastKey = result.LastEvaluatedKey as Record<string, unknown> | undefined;
-  } while (lastKey);
+  } while (lastKey && slugs.length < limit);
 
   return slugs;
 }

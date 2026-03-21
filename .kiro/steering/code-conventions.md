@@ -25,25 +25,22 @@ src/
     errors.ts         → Error types (ValidationError, NotFoundError, DuplicateError)
   functions/
     capture/
-      handler.ts      → Lambda entry point
-      classify.ts     → Bedrock classification logic
-      index.ts        → Export handler
+      handler.ts      → Monolithic Lambda entry point (direct invocation / testing)
+      index.ts        → Export all handlers (monolithic + step handlers)
+      steps/
+        validate.ts   → Step 1: parse input + fetch existing slugs
+        classify.ts   → Step 2: Bedrock classification + slug generation + duplicate check
+        persist.ts    → Step 3: write META to DynamoDB + body to S3 + audit
+        create-edges.ts → Step 4: write EDGE items + return CaptureResponse
     search/
       handler.ts      → Lambda entry point
-      similarity.ts   → Cosine similarity computation
       index.ts
     graph/
       handler.ts      → Lambda entry point
-      builder.ts      → Graph construction from DynamoDB items
       index.ts
     surfacing/
       handler.ts      → Lambda entry point
       analyzers/      → One file per analysis type
-        stale-seeds.ts
-        orphan-nodes.ts
-        missing-connections.ts
-        promotion-candidates.ts
-        content-gaps.ts
       digest.ts       → Compile findings into digest
       index.ts
 ```
@@ -93,9 +90,10 @@ Lambda functions receive configuration via environment variables:
 | `BUCKET_NAME` | Capture, Graph | S3 content bucket name |
 | `BEDROCK_MODEL_ID` | Capture | Claude model ID for classification |
 | `BEDROCK_EMBEDDING_MODEL_ID` | Capture, Search | Titan model ID for embeddings |
-| `SNS_CAPTURE_TOPIC_ARN` | Capture (Step Functions) | SNS topic for capture notifications |
 | `SNS_DIGEST_TOPIC_ARN` | Surfacing | SNS topic for daily digest |
 | `ENVIRONMENT` | All | `dev` or `prod` |
+
+Note: `SNS_CAPTURE_TOPIC_ARN` is not needed as a Lambda env var — SNS publishing for capture-complete is handled natively by Step Functions (NotifySuccess state).
 
 ## Commit conventions
 

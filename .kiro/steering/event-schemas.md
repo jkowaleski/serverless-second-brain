@@ -23,27 +23,30 @@ This file defines the exact schemas for all asynchronous events in the system: E
 ### State transitions
 
 ```
-ValidateInput → GenerateMetadata → ComputeEmbeddings → PersistNode → CreateEdges → NotifySuccess
+ValidateInput → GenerateMetadata → PersistNode → CreateEdges → NotifySuccess
 ```
+
+Note: `ComputeEmbeddings` step is deferred to Phase 2 (Search Lambda, #6). The pipeline will be extended to include it between GenerateMetadata and PersistNode once Bedrock Titan embedding infrastructure exists.
 
 Each state passes its output as input to the next. Intermediate payloads:
 
 **ValidateInput → GenerateMetadata**:
 ```json
 {
-  "text": "...",
-  "url": "...",
-  "type": "concept",
-  "language": "es",
-  "request_id": "uuid",
-  "validated": true
+  "input": {
+    "text": "...",
+    "url": "...",
+    "type": "concept",
+    "language": "es"
+  },
+  "existingSlugs": ["aws-lambda", "serverless", "..."]
 }
 ```
 
-**GenerateMetadata → ComputeEmbeddings**:
+**GenerateMetadata → PersistNode**:
 ```json
 {
-  "slug": "serverless",
+  "input": { "text": "...", "type": "concept", "language": "es" },
   "metadata": {
     "title": "Serverless",
     "title_es": "Serverless",
@@ -51,35 +54,26 @@ Each state passes its output as input to the next. Intermediate payloads:
     "summary_es": "...",
     "summary_en": "...",
     "tags": ["aws", "lambda"],
-    "concepts": ["aws-lambda"],
-    "node_type": "concept",
-    "status": "seed"
+    "concepts": ["aws-lambda"]
   },
-  "body": "...",
-  "request_id": "uuid"
+  "slug": "serverless"
 }
 ```
 
-**ComputeEmbeddings → PersistNode**:
+**PersistNode → CreateEdges**:
 ```json
 {
+  "input": { "text": "...", "type": "concept", "language": "es" },
+  "metadata": { "..." },
   "slug": "serverless",
-  "metadata": { ... },
-  "body": "...",
-  "embedding": {
-    "model": "amazon.titan-embed-text-v2:0",
-    "dimensions": 1024,
-    "vector": [0.123, -0.456, ...]
-  },
-  "request_id": "uuid"
+  "now": "2026-03-19T10:30:00Z"
 }
 ```
 
 ### Retry policy
 
-- GenerateMetadata: retry 3 times, backoff 2s/4s/8s, on `ThrottlingException`
-- ComputeEmbeddings: retry 3 times, backoff 2s/4s/8s, on `ThrottlingException`
-- PersistNode: retry 2 times, backoff 1s/2s, on `ConditionalCheckFailedException`
+- GenerateMetadata: retry 3 times, backoff 2s/4s/8s, on `BedrockError` or `States.TaskFailed`
+- PersistNode: retry 2 times, backoff 1s/2s, on `States.TaskFailed`
 
 ### Error output
 
@@ -96,7 +90,7 @@ Each state passes its output as input to the next. Intermediate payloads:
 
 ### Rule
 
-- Name: `{project_name}-{env}-DailySurfacing`
+- Name: `{project_name}-{env}-daily-surfacing`
 - Schedule: `cron(0 8 * * ? *)`
 - Target: Surfacing Lambda
 
@@ -117,7 +111,7 @@ Each state passes its output as input to the next. Intermediate payloads:
 
 ### Topic: Capture complete
 
-- Name: `{project_name}-{env}-CaptureComplete`
+- Name: `{project_name}-{env}-capture-complete`
 - Published by: Step Functions NotifySuccess state
 
 ```json
@@ -134,7 +128,7 @@ Each state passes its output as input to the next. Intermediate payloads:
 
 ### Topic: Daily digest
 
-- Name: `{project_name}-{env}-DailyDigest`
+- Name: `{project_name}-{env}-daily-digest`
 - Published by: Surfacing Lambda
 - Subscribers: email (owner)
 

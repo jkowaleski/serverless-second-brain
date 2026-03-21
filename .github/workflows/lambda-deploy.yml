@@ -15,13 +15,9 @@ env:
   NODE_VERSION: '22'
 
 jobs:
-  build-and-deploy:
-    name: Build & Deploy (${{ matrix.function }})
+  build:
+    name: Build
     runs-on: ubuntu-latest
-    environment: dev
-    strategy:
-      matrix:
-        function: [capture, search, graph, surfacing]
     steps:
       - uses: actions/checkout@v4
 
@@ -33,21 +29,80 @@ jobs:
         working-directory: src
         run: npm ci
 
-      - name: Build
+      - name: Compile TypeScript
         working-directory: src
-        run: npm run build -- --filter=${{ matrix.function }}
+        run: npx tsc
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: src/dist/
+
+  deploy:
+    name: Deploy (${{ matrix.function }})
+    needs: build
+    runs-on: ubuntu-latest
+    environment: dev
+    strategy:
+      matrix:
+        include:
+          # Monolithic capture handler
+          - function: capture
+            handler_dir: functions/capture
+            shared: true
+          # Step Functions handlers (same code, different entry points)
+          - function: capture-validate
+            handler_dir: functions/capture
+            shared: true
+          - function: capture-classify
+            handler_dir: functions/capture
+            shared: true
+          - function: capture-persist
+            handler_dir: functions/capture
+            shared: true
+          - function: capture-edges
+            handler_dir: functions/capture
+            shared: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install production dependencies
+        working-directory: src
+        run: npm ci --omit=dev
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: src/dist/
+
+      - name: Package Lambda
+        run: |
+          mkdir -p package
+          # Copy compiled handler + steps
+          cp -r src/dist/${{ matrix.handler_dir }}/* package/
+          # Copy compiled shared modules if needed
+          if [ "${{ matrix.shared }}" = "true" ]; then
+            mkdir -p package/shared
+            # Steps reference ../../../shared or ../../shared — flatten to shared/
+            cp -r src/dist/shared/* package/shared/ 2>/dev/null || true
+          fi
+          # Copy node_modules
+          cp -r src/node_modules package/
+          cd package && zip -r ../deploy.zip .
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Package
-        working-directory: src/functions/${{ matrix.function }}
-        run: zip -r ../../../${{ matrix.function }}.zip .
-
       - name: Deploy
         run: |
           aws lambda update-function-code \
             --function-name ssb-dev-${{ matrix.function }} \
-            --zip-file fileb://${{ matrix.function }}.zip
+            --zip-file fileb://deploy.zip

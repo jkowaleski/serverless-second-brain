@@ -1,3 +1,10 @@
+/**
+ * Monolithic capture handler — DEPRECATED for production use.
+ *
+ * Production flow: API Gateway → Step Functions → step handlers (steps/).
+ * This handler is kept for direct Lambda invocation and local testing only.
+ * If modifying capture logic, update the step handlers in steps/ instead.
+ */
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import { validateCaptureRequest, generateSlug } from "../../shared/validation.js";

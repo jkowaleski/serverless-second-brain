@@ -18,7 +18,7 @@ import path from "node:path";
 import matter from "gray-matter";
 import { glob } from "glob";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand, BatchWriteCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 const TABLE_NAME = process.env.TABLE_NAME!;

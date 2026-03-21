@@ -42,7 +42,7 @@ export interface EmbedItem {
 export interface AuditItem {
   PK: string;        // AUDIT#{timestamp}
   SK: string;        // NODE#{slug}
-  action: "create" | "update" | "connect" | "flag";
+  action: "create" | "update" | "connect" | "flag" | "migrate";
   actor: string;
   changes: Record<string, unknown>;
   ttl: number;
