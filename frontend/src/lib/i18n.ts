@@ -33,6 +33,7 @@ const dict = {
   "home.capture": { es: "Capturar", en: "Capture" },
   "home.capture.desc": { es: "Ingestar nuevo conocimiento", en: "Ingest new knowledge" },
   "home.browse": { es: "Explorar por tipo", en: "Browse by type" },
+  "home.explore": { es: "Herramientas", en: "Tools" },
 
   // Types
   "type.concept": { es: "Concepto", en: "Concept" },

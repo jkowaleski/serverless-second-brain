@@ -5,10 +5,10 @@ import { usePrefs } from "@/lib/prefs";
 import { BarChart3, GitFork, Search, BookOpen, FileText, FlaskConical, PenLine, Clock, PlusCircle } from "lucide-react";
 
 const EXPLORE: { href: string; titleKey: DictKey; descKey: DictKey; icon: React.ReactNode }[] = [
-  { href: "/dashboard", titleKey: "home.dashboard", descKey: "home.dashboard.desc", icon: <BarChart3 className="h-5 w-5 text-muted-foreground" /> },
   { href: "/graph", titleKey: "home.graph", descKey: "home.graph.desc", icon: <GitFork className="h-5 w-5 text-muted-foreground" /> },
   { href: "/search", titleKey: "home.search", descKey: "home.search.desc", icon: <Search className="h-5 w-5 text-muted-foreground" /> },
   { href: "/timeline", titleKey: "home.timeline", descKey: "home.timeline.desc", icon: <Clock className="h-5 w-5 text-muted-foreground" /> },
+  { href: "/dashboard", titleKey: "home.dashboard", descKey: "home.dashboard.desc", icon: <BarChart3 className="h-5 w-5 text-muted-foreground" /> },
 ];
 
 const BROWSE: { href: string; titleKey: DictKey; descKey: DictKey; icon: React.ReactNode; color: string }[] = [
@@ -28,16 +28,16 @@ export default function Home() {
         <p className="max-w-2xl text-base text-muted-foreground leading-relaxed sm:text-lg">{t("home.subtitle", locale)}</p>
       </div>
 
-      {/* Explore */}
+      {/* Browse by type — primary action */}
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        {EXPLORE.map((c) => (
+        {BROWSE.map((c) => (
           <Link key={c.href} to={c.href}>
             <Card className="h-full transition-colors hover:bg-accent/50">
-              <CardContent className="flex items-start gap-3 p-4">
-                <div className="mt-0.5 shrink-0">{c.icon}</div>
+              <CardContent className="flex items-center gap-3 p-4">
+                <div className={c.color}>{c.icon}</div>
                 <div className="min-w-0">
                   <h2 className="text-sm font-semibold">{t(c.titleKey, locale)}</h2>
-                  <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">{t(c.descKey, locale)}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{t(c.descKey, locale)}</p>
                 </div>
               </CardContent>
             </Card>
@@ -45,18 +45,18 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Browse by type */}
+      {/* Explore tools */}
       <div className="space-y-3">
-        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("home.browse", locale)}</h2>
+        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("home.explore", locale)}</h2>
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-          {BROWSE.map((c) => (
+          {EXPLORE.map((c) => (
             <Link key={c.href} to={c.href}>
               <Card className="h-full transition-colors hover:bg-accent/50">
-                <CardContent className="flex items-center gap-3 p-4">
-                  <div className={c.color}>{c.icon}</div>
+                <CardContent className="flex items-start gap-3 p-4">
+                  <div className="mt-0.5 shrink-0">{c.icon}</div>
                   <div className="min-w-0">
                     <h2 className="text-sm font-semibold">{t(c.titleKey, locale)}</h2>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{t(c.descKey, locale)}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">{t(c.descKey, locale)}</p>
                   </div>
                 </CardContent>
               </Card>

@@ -18,7 +18,6 @@ const TOOL_KEYS: { href: string; key: DictKey }[] = [
   { href: "/search", key: "nav.search" },
   { href: "/timeline", key: "nav.timeline" },
   { href: "/dashboard", key: "nav.dashboard" },
-  { href: "/capture", key: "nav.capture" },
 ];
 
 function AuthButton() {
@@ -114,7 +113,7 @@ function ShellInner() {
             ))}
           </div>
 
-          {/* Desktop right side — tools + controls */}
+          {/* Desktop right side — tools + capture + controls */}
           <div className="hidden items-center gap-1 md:flex">
             {TOOL_KEYS.map((n) => (
               <Link
@@ -130,6 +129,17 @@ function ShellInner() {
                 {t(n.key, locale)}
               </Link>
             ))}
+            <Link
+              to="/capture"
+              className={cn(
+                "rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors",
+                isActive("/capture")
+                  ? "text-foreground"
+                  : "text-primary hover:text-primary/80",
+              )}
+            >
+              + {t("nav.capture", locale)}
+            </Link>
             <div className="ml-1 flex items-center border-l border-border/50 pl-2">
               <AuthButton />
               <ThemeToggle />
@@ -188,9 +198,23 @@ function ShellInner() {
                 {t(n.key, locale)}
               </Link>
             ))}
-            <div className="mt-3 flex items-center gap-1 border-t border-border/50 px-3 pt-3">
-              <LayoutToggle />
-              <span className="text-xs text-muted-foreground">{t(layout === "boxed" ? "prefs.boxed" : "prefs.full", locale)}</span>
+            <div className="mt-3 border-t border-border/50 pt-3">
+              <Link
+                to="/capture"
+                onClick={() => setOpen(false)}
+                className={cn(
+                  "block rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                  isActive("/capture")
+                    ? "text-foreground bg-accent"
+                    : "text-primary hover:bg-accent",
+                )}
+              >
+                + {t("nav.capture", locale)}
+              </Link>
+              <div className="mt-2 flex items-center gap-1 px-3">
+                <LayoutToggle />
+                <span className="text-xs text-muted-foreground">{t(layout === "boxed" ? "prefs.boxed" : "prefs.full", locale)}</span>
+              </div>
             </div>
           </div>
         )}
