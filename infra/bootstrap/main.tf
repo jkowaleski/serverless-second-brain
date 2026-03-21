@@ -134,6 +134,7 @@ resource "aws_iam_role_policy" "github_actions" {
           "logs:*",
           "cloudfront:*",
           "bedrock:*",
+          "bedrock-agentcore:*",
           "sagemaker:*"
         ]
         Resource = "*"
