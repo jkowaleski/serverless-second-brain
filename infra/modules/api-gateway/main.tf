@@ -213,7 +213,7 @@ resource "aws_api_gateway_method" "capture_post" {
   http_method      = "POST"
   authorization    = var.enable_authorizer ? "CUSTOM" : "NONE"
   authorizer_id    = var.enable_authorizer ? aws_api_gateway_authorizer.cognito[0].id : null
-  api_key_required = var.enable_authorizer ? false : true
+  api_key_required = false
 }
 
 resource "aws_api_gateway_integration" "capture_sfn" {
@@ -645,33 +645,6 @@ resource "aws_api_gateway_method_settings" "capture" {
   }
 }
 
-# ─── API Key + Usage Plan ───
-
-resource "aws_api_gateway_api_key" "this" {
-  name    = "${var.api_name}-key"
-  enabled = true
-}
-
-resource "aws_api_gateway_usage_plan" "this" {
-  name = "${var.api_name}-usage-plan"
-
-  api_stages {
-    api_id = aws_api_gateway_rest_api.this.id
-    stage  = aws_api_gateway_stage.this.stage_name
-  }
-
-  throttle_settings {
-    burst_limit = var.throttle_burst
-    rate_limit  = var.throttle_rate
-  }
-}
-
-resource "aws_api_gateway_usage_plan_key" "this" {
-  key_id        = aws_api_gateway_api_key.this.id
-  key_type      = "API_KEY"
-  usage_plan_id = aws_api_gateway_usage_plan.this.id
-}
-
 # ─── API Gateway account (CloudWatch role) ───
 
 resource "aws_api_gateway_account" "this" {
@@ -708,15 +681,6 @@ output "api_execution_arn" {
 
 output "invoke_url" {
   value = aws_api_gateway_stage.this.invoke_url
-}
-
-output "api_key_id" {
-  value = aws_api_gateway_api_key.this.id
-}
-
-output "api_key_value" {
-  value     = aws_api_gateway_api_key.this.value
-  sensitive = true
 }
 
 output "stage_name" {
