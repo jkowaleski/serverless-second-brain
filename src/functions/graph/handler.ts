@@ -7,6 +7,7 @@ import type { MetaItem, EdgeItem } from "../../shared/types.js";
 let cachedGraph: { nodes: MetaItem[]; edges: EdgeItem[] } | null = null;
 let cacheTime = 0;
 const CACHE_TTL_MS = 5 * 60 * 1000;
+const CORS_ORIGIN = process.env.CORS_ALLOW_ORIGIN ?? "*";
 
 async function loadGraph() {
   if (!cachedGraph || Date.now() - cacheTime > CACHE_TTL_MS) {
@@ -61,7 +62,7 @@ async function handleGraph(event: APIGatewayProxyEvent): Promise<APIGatewayProxy
 
   return {
     statusCode: 200,
-    headers: { "Access-Control-Allow-Origin": "*" },
+    headers: { "Access-Control-Allow-Origin": CORS_ORIGIN },
     body: JSON.stringify({
       nodes: nodes.map((n) => ({ ...formatNode(n), edge_count: edgeCounts.get(n.slug) ?? 0 })),
       edges: edges.map(formatEdge),
@@ -93,7 +94,7 @@ async function handleNode(slug: string): Promise<APIGatewayProxyResult> {
 
   return {
     statusCode: 200,
-    headers: { "Access-Control-Allow-Origin": "*" },
+    headers: { "Access-Control-Allow-Origin": CORS_ORIGIN },
     body: JSON.stringify({
       node: {
         id: node.slug,

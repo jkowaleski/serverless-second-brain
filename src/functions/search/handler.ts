@@ -6,6 +6,7 @@ import type { MetaItem, EmbedItem } from "../../shared/types.js";
 
 const KEYWORD_WEIGHT = 0.3;
 const SEMANTIC_WEIGHT = 0.7;
+const CORS_ORIGIN = process.env.CORS_ALLOW_ORIGIN ?? "*";
 
 // In-memory cache for warm Lambda invocations
 let cachedNodes: MetaItem[] | null = null;
@@ -90,7 +91,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     return {
       statusCode: 200,
-      headers: { "Access-Control-Allow-Origin": "*" },
+      headers: { "Access-Control-Allow-Origin": CORS_ORIGIN },
       body: JSON.stringify({
         query: q,
         results: scored,

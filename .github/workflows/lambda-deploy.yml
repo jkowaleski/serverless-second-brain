@@ -47,31 +47,23 @@ jobs:
     strategy:
       matrix:
         include:
-          # Monolithic capture handler
+          # Capture handlers — all share the same code package
           - function: capture
             handler_dir: functions/capture
-            shared: true
-          # Step Functions handlers (same code, different entry points)
           - function: capture-validate
             handler_dir: functions/capture
-            shared: true
           - function: capture-classify
             handler_dir: functions/capture
-            shared: true
           - function: capture-persist
             handler_dir: functions/capture
-            shared: true
           - function: capture-edges
             handler_dir: functions/capture
-            shared: true
           # Search Lambda
           - function: search
             handler_dir: functions/search
-            shared: true
           # Graph Lambda
           - function: graph
             handler_dir: functions/graph
-            shared: true
     steps:
       - uses: actions/checkout@v4
 
@@ -92,15 +84,11 @@ jobs:
       - name: Package Lambda
         run: |
           mkdir -p package
-          # Copy compiled handler + steps
-          cp -r src/dist/${{ matrix.handler_dir }}/* package/
-          # Copy compiled shared modules if needed
-          if [ "${{ matrix.shared }}" = "true" ]; then
-            mkdir -p package/shared
-            # Steps reference ../../../shared or ../../shared — flatten to shared/
-            cp -r src/dist/shared/* package/shared/ 2>/dev/null || true
-          fi
-          # Copy node_modules
+          # Preserve full directory structure so relative imports work
+          # e.g. functions/capture/steps/validate.js imports ../../../shared/
+          cp -r src/dist/${{ matrix.handler_dir }} package/${{ matrix.handler_dir }}
+          mkdir -p package/shared
+          cp -r src/dist/shared/* package/shared/
           cp -r src/node_modules package/
           cd package && zip -r ../deploy.zip .
 

@@ -114,15 +114,26 @@ Each state passes its output as input to the next. Intermediate payloads:
 - Name: `{project_name}-{env}-capture-complete`
 - Published by: Step Functions NotifySuccess state
 
+The message wraps the full pipeline output (CaptureResponse) under `detail`:
+
 ```json
 {
-  "event": "node_created",
-  "slug": "serverless",
-  "node_type": "concept",
-  "status": "seed",
-  "title": "Serverless",
-  "created_by": "human | agent:{session_id}",
-  "created_at": "2026-03-19T10:30:00Z"
+  "source": "capture-pipeline",
+  "detail": {
+    "id": "serverless",
+    "slug": "serverless",
+    "node_type": "concept",
+    "status": "seed",
+    "title": "Serverless",
+    "title_es": "Serverless",
+    "title_en": "Serverless",
+    "summary_es": "...",
+    "summary_en": "...",
+    "tags": ["aws", "lambda"],
+    "concepts": ["aws-lambda"],
+    "created_at": "2026-03-19T10:30:00Z",
+    "updated_at": "2026-03-19T10:30:00Z"
+  }
 }
 ```
 

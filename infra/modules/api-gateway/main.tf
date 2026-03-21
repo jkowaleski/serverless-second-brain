@@ -499,6 +499,8 @@ resource "aws_api_gateway_deployment" "this" {
       aws_api_gateway_method.capture_post.id,
       aws_api_gateway_integration.health_mock.id,
       aws_api_gateway_integration.capture_sfn.id,
+      var.search_lambda_invoke_arn,
+      var.graph_lambda_invoke_arn,
     ]))
   }
 
@@ -513,6 +515,9 @@ resource "aws_api_gateway_deployment" "this" {
     aws_api_gateway_integration.health_options,
     aws_api_gateway_integration_response.capture_201,
     aws_api_gateway_integration_response.capture_500,
+    aws_api_gateway_integration.search_lambda,
+    aws_api_gateway_integration.graph_lambda,
+    aws_api_gateway_integration.nodes_id_lambda,
   ]
 }
 

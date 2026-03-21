@@ -20,12 +20,6 @@ variable "acm_certificate_arn" {
   default     = ""
 }
 
-variable "api_gateway_origin" {
-  description = "API Gateway invoke URL for /api/* proxy (empty = no API proxy)"
-  type        = string
-  default     = ""
-}
-
 # ─── S3 Frontend Bucket ───
 
 resource "aws_s3_bucket" "frontend" {

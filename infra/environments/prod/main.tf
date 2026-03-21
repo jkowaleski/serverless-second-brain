@@ -70,7 +70,7 @@ locals {
 module "capture_lambda" {
   source                = "../../modules/lambda"
   function_name         = "${var.project_name}-${var.environment}-capture"
-  handler               = "index.handler"
+  handler               = "functions/capture/index.handler"
   memory_size           = 512
   timeout               = 30
   environment_variables = local.capture_env
@@ -80,7 +80,7 @@ module "capture_lambda" {
 module "capture_validate" {
   source                = "../../modules/lambda"
   function_name         = "${var.project_name}-${var.environment}-capture-validate"
-  handler               = "index.validate"
+  handler               = "functions/capture/index.validate"
   memory_size           = 256
   timeout               = 10
   environment_variables = local.capture_env
@@ -90,7 +90,7 @@ module "capture_validate" {
 module "capture_classify" {
   source                = "../../modules/lambda"
   function_name         = "${var.project_name}-${var.environment}-capture-classify"
-  handler               = "index.classify"
+  handler               = "functions/capture/index.classify"
   memory_size           = 512
   timeout               = 30
   environment_variables = local.capture_env
@@ -103,7 +103,7 @@ module "capture_classify" {
 module "capture_persist" {
   source                = "../../modules/lambda"
   function_name         = "${var.project_name}-${var.environment}-capture-persist"
-  handler               = "index.persist"
+  handler               = "functions/capture/index.persist"
   memory_size           = 256
   timeout               = 10
   environment_variables = local.capture_env
@@ -116,7 +116,7 @@ module "capture_persist" {
 module "capture_create_edges" {
   source                = "../../modules/lambda"
   function_name         = "${var.project_name}-${var.environment}-capture-edges"
-  handler               = "index.createEdges"
+  handler               = "functions/capture/index.createEdges"
   memory_size           = 256
   timeout               = 10
   environment_variables = local.capture_env
@@ -127,12 +127,14 @@ module "capture_create_edges" {
 module "search_lambda" {
   source        = "../../modules/lambda"
   function_name = "${var.project_name}-${var.environment}-search"
+  handler       = "functions/search/handler.handler"
   memory_size   = 512
   timeout       = 30
 
   environment_variables = {
     TABLE_NAME                 = module.dynamodb.table_name
     BEDROCK_EMBEDDING_MODEL_ID = var.bedrock_embedding_model_id
+    CORS_ALLOW_ORIGIN          = var.cors_allow_origin
     ENVIRONMENT                = var.environment
   }
 
@@ -145,13 +147,15 @@ module "search_lambda" {
 module "graph_lambda" {
   source        = "../../modules/lambda"
   function_name = "${var.project_name}-${var.environment}-graph"
+  handler       = "functions/graph/handler.handler"
   memory_size   = 256
   timeout       = 10
 
   environment_variables = {
-    TABLE_NAME  = module.dynamodb.table_name
-    BUCKET_NAME = module.s3_content.bucket_name
-    ENVIRONMENT = var.environment
+    TABLE_NAME        = module.dynamodb.table_name
+    BUCKET_NAME       = module.s3_content.bucket_name
+    CORS_ALLOW_ORIGIN = var.cors_allow_origin
+    ENVIRONMENT       = var.environment
   }
 
   policy_arns = [
