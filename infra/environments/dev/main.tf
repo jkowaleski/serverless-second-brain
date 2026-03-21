@@ -281,3 +281,9 @@ module "api_gateway" {
   graph_lambda_function_name  = module.graph_lambda.function_name
   cors_allow_origin           = var.cors_allow_origin
 }
+
+module "cloudfront" {
+  source               = "../../modules/cloudfront"
+  distribution_name    = "${var.project_name}-${var.environment}-frontend"
+  frontend_bucket_name = "${var.project_name}-${var.environment}-frontend"
+}

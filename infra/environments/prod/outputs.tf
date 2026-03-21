@@ -98,3 +98,16 @@ output "api_key_value" {
   value     = module.api_gateway.api_key_value
   sensitive = true
 }
+
+# Frontend
+output "cloudfront_distribution_id" {
+  value = module.cloudfront.distribution_id
+}
+
+output "cloudfront_domain" {
+  value = module.cloudfront.distribution_domain
+}
+
+output "frontend_bucket_name" {
+  value = module.cloudfront.frontend_bucket_name
+}
