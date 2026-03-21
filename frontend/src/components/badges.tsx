@@ -1,29 +1,27 @@
-import { TYPE_COLORS, STATUS_LABELS, TYPE_LABELS } from "@/lib/constants";
+import { Badge } from "@/components/ui/badge";
+import { TYPE_COLORS } from "@/lib/constants";
+import { typeLabel, statusLabel } from "@/lib/i18n";
+import { usePrefs } from "@/lib/prefs";
 
 export function TypeBadge({ type }: { type: string }) {
+  const { locale } = usePrefs();
   const color = TYPE_COLORS[type] ?? "#71717a";
   return (
-    <span
-      className="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium"
-      style={{ backgroundColor: `${color}22`, color }}
-    >
-      {TYPE_LABELS[type] ?? type}
-    </span>
+    <Badge variant="outline" style={{ borderColor: color, color }}>
+      {typeLabel(type, locale)}
+    </Badge>
   );
 }
 
 export function StatusBadge({ status }: { status: string }) {
+  const { locale } = usePrefs();
   return (
-    <span className="text-xs text-zinc-400">
-      {STATUS_LABELS[status] ?? status}
-    </span>
+    <Badge variant="secondary">
+      {statusLabel(status, locale)}
+    </Badge>
   );
 }
 
-export function Tag({ tag }: { tag: string }) {
-  return (
-    <span className="inline-block rounded bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">
-      {tag}
-    </span>
-  );
+export function TagBadge({ tag }: { tag: string }) {
+  return <Badge variant="outline">{tag}</Badge>;
 }

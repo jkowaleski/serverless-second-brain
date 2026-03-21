@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { TypeBadge, StatusBadge, Tag } from "./badges";
+import { Card, CardContent } from "@/components/ui/card";
+import { TypeBadge, StatusBadge, TagBadge } from "./badges";
 
 interface Props {
   id: string;
@@ -14,32 +15,33 @@ interface Props {
 
 export function NodeCard({ id, title, summary, node_type, status, tags, score, extra }: Props) {
   return (
-    <Link
-      href={`/node?id=${id}`}
-      className="block rounded-lg border border-zinc-800 p-4 transition hover:border-zinc-600 hover:bg-zinc-900/50"
-    >
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="font-medium">{title}</h3>
-        <div className="flex shrink-0 items-center gap-2">
-          {score != null && (
-            <span className="text-xs text-zinc-500">{Math.round(score * 100)}%</span>
+    <Link href={`/node?id=${id}`}>
+      <Card className="transition hover:border-border/80 hover:bg-accent/50">
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="font-medium">{title}</h3>
+            <div className="flex shrink-0 items-center gap-2">
+              {score != null && (
+                <span className="text-xs text-muted-foreground">{Math.round(score * 100)}%</span>
+              )}
+              <TypeBadge type={node_type} />
+            </div>
+          </div>
+          {summary && (
+            <p className="mt-1.5 text-sm text-muted-foreground line-clamp-2">{summary}</p>
           )}
-          <TypeBadge type={node_type} />
-        </div>
-      </div>
-      {summary && (
-        <p className="mt-1.5 text-sm text-zinc-400 line-clamp-2">{summary}</p>
-      )}
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <StatusBadge status={status} />
-        {tags.slice(0, 5).map((t) => (
-          <Tag key={t} tag={t} />
-        ))}
-        {tags.length > 5 && (
-          <span className="text-xs text-zinc-500">+{tags.length - 5}</span>
-        )}
-        {extra}
-      </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <StatusBadge status={status} />
+            {tags.slice(0, 5).map((tg) => (
+              <TagBadge key={tg} tag={tg} />
+            ))}
+            {tags.length > 5 && (
+              <span className="text-xs text-muted-foreground">+{tags.length - 5}</span>
+            )}
+            {extra}
+          </div>
+        </CardContent>
+      </Card>
     </Link>
   );
 }

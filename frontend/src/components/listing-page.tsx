@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { GraphNode } from "@/lib/types";
 import { NodeCard } from "@/components/node-card";
-import { TYPE_LABELS } from "@/lib/constants";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { t, typeLabel, statusLabel } from "@/lib/i18n";
+import { usePrefs } from "@/lib/prefs";
 
-interface Props {
-  nodeType: string;
-}
+const STATUSES = ["seed", "growing", "evergreen"];
 
-export function ListingPage({ nodeType }: Props) {
+export function ListingPage({ nodeType }: { nodeType: string }) {
+  const { locale } = usePrefs();
   const [nodes, setNodes] = useState<GraphNode[]>([]);
   const [status, setStatus] = useState("");
   const [sort, setSort] = useState<"edges" | "title">("edges");
@@ -28,39 +29,37 @@ export function ListingPage({ nodeType }: Props) {
     sort === "edges" ? b.edge_count - a.edge_count : a.title.localeCompare(b.title),
   );
 
-  const label = TYPE_LABELS[nodeType] ?? nodeType;
-
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">{label}s</h1>
-        <div className="flex gap-3">
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className="rounded bg-zinc-800 border border-zinc-700 px-2 py-1 text-sm text-zinc-300"
-            aria-label="Filtrar por estado"
-          >
-            <option value="">Todos</option>
-            <option value="seed">🌱 Semilla</option>
-            <option value="growing">🌿 Creciendo</option>
-            <option value="evergreen">🌲 Perenne</option>
-          </select>
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as "edges" | "title")}
-            className="rounded bg-zinc-800 border border-zinc-700 px-2 py-1 text-sm text-zinc-300"
-            aria-label="Ordenar por"
-          >
-            <option value="edges">Más conectados</option>
-            <option value="title">Alfabético</option>
-          </select>
-          <span className="self-center text-sm text-zinc-500">{sorted.length}</span>
+        <h1 className="text-2xl font-bold">{typeLabel(nodeType, locale)}s</h1>
+        <div className="flex items-center gap-3">
+          <Select value={status || "_all"} onValueChange={(v: string | null) => setStatus(!v || v === "_all" ? "" : v)}>
+            <SelectTrigger className="w-[140px]" aria-label={t("filter.status", locale)}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all">{t("filter.all_statuses", locale)}</SelectItem>
+              {STATUSES.map((st) => (
+                <SelectItem key={st} value={st}>{statusLabel(st, locale)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={sort} onValueChange={(v: string | null) => v && setSort(v as "edges" | "title")}>
+            <SelectTrigger className="w-[160px]" aria-label={t("listing.sort", locale)}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="edges">{t("listing.sort.edges", locale)}</SelectItem>
+              <SelectItem value="title">{t("listing.sort.alpha", locale)}</SelectItem>
+            </SelectContent>
+          </Select>
+          <span className="text-sm text-muted-foreground">{sorted.length}</span>
         </div>
       </div>
 
       {loading ? (
-        <p className="text-zinc-500">Cargando…</p>
+        <p className="text-muted-foreground">{t("common.loading", locale)}</p>
       ) : (
         <div className="space-y-2">
           {sorted.map((n) => (
@@ -71,7 +70,7 @@ export function ListingPage({ nodeType }: Props) {
               node_type={n.node_type}
               status={n.status}
               tags={n.tags}
-              extra={<span className="ml-auto text-xs text-zinc-500">{n.edge_count} aristas</span>}
+              extra={<span className="ml-auto text-xs text-muted-foreground">{t("dashboard.edges_count", locale, { count: n.edge_count })}</span>}
             />
           ))}
         </div>

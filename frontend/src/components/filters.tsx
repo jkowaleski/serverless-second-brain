@@ -1,5 +1,12 @@
 "use client";
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { t, typeLabel, statusLabel } from "@/lib/i18n";
+import { usePrefs } from "@/lib/prefs";
+
+const TYPES = ["concept", "note", "experiment", "essay"];
+const STATUSES = ["seed", "growing", "evergreen"];
+
 interface Props {
   type: string;
   status: string;
@@ -8,23 +15,31 @@ interface Props {
 }
 
 export function Filters({ type, status, onTypeChange, onStatusChange }: Props) {
-  const sel =
-    "rounded bg-zinc-800 border border-zinc-700 px-2 py-1 text-sm text-zinc-300 focus:outline-none focus:border-zinc-500";
+  const { locale } = usePrefs();
   return (
     <div className="flex flex-wrap gap-3">
-      <select value={type} onChange={(e) => onTypeChange(e.target.value)} className={sel} aria-label="Filtrar por tipo">
-        <option value="">Todos los tipos</option>
-        <option value="concept">Concepto</option>
-        <option value="note">Nota</option>
-        <option value="experiment">Experimento</option>
-        <option value="essay">Ensayo</option>
-      </select>
-      <select value={status} onChange={(e) => onStatusChange(e.target.value)} className={sel} aria-label="Filtrar por estado">
-        <option value="">Todos los estados</option>
-        <option value="seed">🌱 Semilla</option>
-        <option value="growing">🌿 Creciendo</option>
-        <option value="evergreen">🌲 Perenne</option>
-      </select>
+      <Select value={type || "_all"} onValueChange={(v: string | null) => onTypeChange(!v || v === "_all" ? "" : v)}>
+        <SelectTrigger className="w-[160px]" aria-label={t("filter.type", locale)}>
+          <SelectValue placeholder={t("filter.all_types", locale)} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="_all">{t("filter.all_types", locale)}</SelectItem>
+          {TYPES.map((tp) => (
+            <SelectItem key={tp} value={tp}>{typeLabel(tp, locale)}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={status || "_all"} onValueChange={(v: string | null) => onStatusChange(!v || v === "_all" ? "" : v)}>
+        <SelectTrigger className="w-[160px]" aria-label={t("filter.status", locale)}>
+          <SelectValue placeholder={t("filter.all_statuses", locale)} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="_all">{t("filter.all_statuses", locale)}</SelectItem>
+          {STATUSES.map((st) => (
+            <SelectItem key={st} value={st}>{statusLabel(st, locale)}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }
