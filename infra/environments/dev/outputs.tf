@@ -142,3 +142,7 @@ output "connect_function_name" {
 output "flag_function_name" {
   value = module.flag_lambda.function_name
 }
+
+output "dashboard_url" {
+  value = module.monitoring.dashboard_url
+}

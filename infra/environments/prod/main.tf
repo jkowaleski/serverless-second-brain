@@ -456,3 +456,31 @@ module "agentcore_gateway" {
     }
   }
 }
+
+# --- Observability (#14) ---
+
+module "monitoring" {
+  source = "../../modules/monitoring"
+
+  project_name    = var.project_name
+  environment     = var.environment
+  alarm_sns_topic_arn = module.daily_digest_topic.topic_arn
+
+  lambda_function_names = [
+    module.capture_lambda.function_name,
+    module.capture_validate.function_name,
+    module.capture_classify.function_name,
+    module.capture_persist.function_name,
+    module.capture_create_edges.function_name,
+    module.search_lambda.function_name,
+    module.graph_lambda.function_name,
+    module.connect_lambda.function_name,
+    module.flag_lambda.function_name,
+    module.surfacing_lambda.function_name,
+  ]
+
+  dynamodb_table_name = module.dynamodb.table_name
+  api_gateway_name    = "${var.project_name}-${var.environment}-api"
+  api_gateway_stage   = var.environment
+  state_machine_name  = "${var.project_name}-${var.environment}-capture-pipeline"
+}

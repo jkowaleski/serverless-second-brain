@@ -574,6 +574,8 @@ resource "aws_api_gateway_stage" "this" {
       latency        = "$context.integrationLatency"
     })
   }
+
+  xray_tracing_enabled = true
 }
 
 resource "aws_api_gateway_method_settings" "all" {
