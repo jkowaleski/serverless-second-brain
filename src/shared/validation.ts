@@ -2,8 +2,8 @@ import { CaptureRequest } from "./types.js";
 import { ValidationError } from "./errors.js";
 
 const SLUG_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-const VALID_TYPES = ["concept", "note", "experiment", "essay"];
-const VALID_LANGUAGES = ["es", "en"];
+const VALID_TYPES = (process.env.NODE_TYPES || "concept,note,experiment,essay").split(",");
+const VALID_LANGUAGES = (process.env.LANGUAGES || "es,en").split(",");
 
 export function validateCaptureRequest(body: unknown): CaptureRequest {
   if (!body || typeof body !== "object") {

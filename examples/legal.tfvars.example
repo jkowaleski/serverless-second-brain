@@ -1,0 +1,15 @@
+# Legal knowledge graph — sentencias, leyes, contratos
+# Copy to infra/environments/dev/terraform.tfvars
+
+project_name = "legal-kb"
+environment  = "dev"
+
+node_types = ["sentencia", "ley", "contrato", "opinion", "doctrina"]
+edge_types = ["cita", "contradice", "amplia", "deroga", "aplica"]
+languages  = "es"
+
+digest_email = ""
+surfacing_stale_days           = 30
+surfacing_min_edges            = 1
+surfacing_similarity_threshold = "0.80"
+cors_allow_origin              = "*"

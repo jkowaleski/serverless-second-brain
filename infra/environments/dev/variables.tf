@@ -56,3 +56,27 @@ variable "cors_allow_origin" {
   type        = string
   default     = "*"
 }
+
+variable "languages" {
+  description = "Supported languages for bilingual content (comma-separated)"
+  type        = string
+  default     = "es,en"
+}
+
+variable "surfacing_stale_days" {
+  description = "Days before a seed is considered stale"
+  type        = number
+  default     = 7
+}
+
+variable "surfacing_min_edges" {
+  description = "Minimum edges before a node is considered orphaned"
+  type        = number
+  default     = 2
+}
+
+variable "surfacing_similarity_threshold" {
+  description = "Cosine similarity threshold for missing connection suggestions"
+  type        = string
+  default     = "0.85"
+}

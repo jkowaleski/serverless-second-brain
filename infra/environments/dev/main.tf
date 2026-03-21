@@ -60,6 +60,8 @@ locals {
     BEDROCK_MODEL_ID           = var.bedrock_model_id
     BEDROCK_EMBEDDING_MODEL_ID = var.bedrock_embedding_model_id
     ENVIRONMENT                = var.environment
+    NODE_TYPES                 = join(",", var.node_types)
+    LANGUAGES                  = var.languages
   }
   capture_policies = [
     module.iam.dynamodb_write_policy_arn,
@@ -348,9 +350,9 @@ module "surfacing_lambda" {
   environment_variables = {
     TABLE_NAME             = module.dynamodb.table_name
     SNS_DIGEST_TOPIC_ARN   = module.daily_digest_topic.topic_arn
-    STALE_DAYS             = "7"
-    MIN_EDGES              = "2"
-    SIMILARITY_THRESHOLD   = "0.85"
+    STALE_DAYS             = tostring(var.surfacing_stale_days)
+    MIN_EDGES              = tostring(var.surfacing_min_edges)
+    SIMILARITY_THRESHOLD   = var.surfacing_similarity_threshold
     ENVIRONMENT            = var.environment
   }
 

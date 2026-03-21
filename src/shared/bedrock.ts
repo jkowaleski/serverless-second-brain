@@ -5,6 +5,8 @@ import { BedrockError } from "./errors.js";
 const bedrock = new BedrockRuntimeClient({});
 const MODEL_ID = process.env.BEDROCK_MODEL_ID!;
 const EMBEDDING_MODEL_ID = process.env.BEDROCK_EMBEDDING_MODEL_ID ?? "amazon.titan-embed-text-v2:0";
+const LANGUAGES = (process.env.LANGUAGES || "es,en").split(",");
+const CLASSIFY_PROMPT_OVERRIDE = process.env.CLASSIFY_PROMPT || "";
 
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1000;
@@ -40,9 +42,11 @@ async function invokeWithRetry(params: { modelId: string; body: string }): Promi
 export async function classify(
   text: string,
   existingSlugs: string[],
-  language: "es" | "en",
+  language: string,
 ): Promise<ClassificationResult> {
-  const prompt = `You are a knowledge graph classifier. Given the following text, generate structured metadata for a knowledge node.
+  const langFields = LANGUAGES.map((l) => `  "title_${l}": "${l} title",\n  "summary_${l}": "2-3 sentence ${l} summary"`).join(",\n");
+
+  const defaultPrompt = `You are a knowledge graph classifier. Given the following text, generate structured metadata for a knowledge node.
 
 Text:
 ${text}
@@ -54,10 +58,7 @@ Input language: ${language}
 Respond with ONLY valid JSON matching this schema:
 {
   "title": "short title in the content's primary language",
-  "title_es": "Spanish title",
-  "title_en": "English title",
-  "summary_es": "2-3 sentence Spanish summary",
-  "summary_en": "2-3 sentence English summary",
+${langFields},
   "tags": ["tag1", "tag2", "tag3"],
   "concepts": ["existing-slug-1", "existing-slug-2"]
 }
@@ -67,6 +68,8 @@ Rules:
 - concepts: only slugs from the existing nodes list that are genuinely related
 - summaries: concrete and specific, not generic
 - title: concise, no articles`;
+
+  const prompt = CLASSIFY_PROMPT_OVERRIDE || defaultPrompt;
 
   const responseBody = await invokeWithRetry({
     modelId: MODEL_ID,

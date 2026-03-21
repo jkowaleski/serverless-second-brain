@@ -1,0 +1,15 @@
+# Research lab knowledge graph — papers, experiments, datasets
+# Copy to infra/environments/dev/terraform.tfvars
+
+project_name = "research-kb"
+environment  = "dev"
+
+node_types = ["paper", "experiment", "dataset", "hypothesis", "result"]
+edge_types = ["reproduces", "refutes", "extends", "uses_dataset", "inspired_by"]
+languages  = "en"
+
+digest_email = ""
+surfacing_stale_days           = 14
+surfacing_min_edges            = 2
+surfacing_similarity_threshold = "0.80"
+cors_allow_origin              = "*"
