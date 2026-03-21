@@ -141,3 +141,36 @@ resource "aws_iam_policy" "bedrock_invoke" {
 output "bedrock_invoke_policy_arn" {
   value = aws_iam_policy.bedrock_invoke.arn
 }
+
+# --- AgentCore Gateway IAM Role ---
+
+resource "aws_iam_role" "agentcore_gateway" {
+  name = "${var.project_name}-${var.environment}-agentcore-gateway"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Action    = "sts:AssumeRole"
+      Principal = { Service = "bedrock-agentcore.amazonaws.com" }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "agentcore_gateway_lambda" {
+  name = "lambda-invoke"
+  role = aws_iam_role.agentcore_gateway.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "lambda:InvokeFunction"
+      Resource = "arn:aws:lambda:*:${data.aws_caller_identity.current.account_id}:function:${var.project_name}-${var.environment}-*"
+    }]
+  })
+}
+
+output "agentcore_gateway_role_arn" {
+  value = aws_iam_role.agentcore_gateway.arn
+}

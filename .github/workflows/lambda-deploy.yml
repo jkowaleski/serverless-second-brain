@@ -64,6 +64,12 @@ jobs:
           # Graph Lambda
           - function: graph
             handler_dir: functions/graph
+          # Connect Lambda (MCP write tool)
+          - function: connect
+            handler_dir: functions/connect
+          # Flag Lambda (MCP write tool)
+          - function: flag
+            handler_dir: functions/flag
     steps:
       - uses: actions/checkout@v4
 

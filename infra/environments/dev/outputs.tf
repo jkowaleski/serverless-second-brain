@@ -111,3 +111,21 @@ output "cloudfront_domain" {
 output "frontend_bucket_name" {
   value = module.cloudfront.frontend_bucket_name
 }
+
+# AgentCore Gateway
+output "agentcore_gateway_id" {
+  value = module.agentcore_gateway.gateway_id
+}
+
+output "agentcore_gateway_url" {
+  value = module.agentcore_gateway.gateway_url
+}
+
+# Write Lambdas
+output "connect_function_name" {
+  value = module.connect_lambda.function_name
+}
+
+output "flag_function_name" {
+  value = module.flag_lambda.function_name
+}
