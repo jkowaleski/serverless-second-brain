@@ -137,7 +137,7 @@ Search has the same scan problem but is less severe because it can use GSI2 to f
 
 ### Recommendations
 
-1. ~~**Reduce input tokens**: Pass only the last 50 slugs (most recent) instead of all slugs. Or use a Bloom filter for duplicate detection instead of passing the full list.~~ **Done** — `2b68b49` (#19). Validate step no longer fetches all slugs. Classify fetches 20 recent slugs for cross-reference hints only. Estimated reduction: 6,764 → ~1,500 tokens/invocation (~75%).
+1. ~~**Reduce input tokens**: Pass only the last 50 slugs (most recent) instead of all slugs. Or use a Bloom filter for duplicate detection instead of passing the full list.~~ **Done** — `2b68b49` (#19). Validate step no longer fetches all slugs. Classify fetches 20 recent slugs for cross-reference hints only. Estimated reduction: 6,764 → ~1,500 tokens/invocation (~78%).
 
 2. **Cache embeddings**: Search queries that repeat within a TTL window don't need re-embedding. Add a simple in-memory or DynamoDB cache.
 
@@ -150,7 +150,7 @@ Search has the same scan problem but is less severe because it can use GSI2 to f
 | Date | Commit | Issue | Change | Impact |
 |---|---|---|---|---|
 | 2026-03-21 | `031b012` | — | Step Functions: only retry `BedrockError`, not `States.TaskFailed` | Eliminates retry cascade on `DuplicateError`. Reduces classify invocations from 2.2x to 1x. Fixes capture 504 timeout. |
-| 2026-03-21 | `2b68b49` | #19 | Classify prompt: 20 recent slugs instead of all slugs | ~75% input token reduction (6,764 → ~1,500 tokens/invocation). Projected savings: ~$12/week at development rate. |
+| 2026-03-21 | `2b68b49` | #19 | Classify prompt: 20 recent slugs instead of all slugs | ~78% input token reduction (6,764 → ~1,500 tokens/invocation). Projected savings: ~$12/week at development rate. |
 
 ### Projected cost after improvements
 
