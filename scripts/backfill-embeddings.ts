@@ -19,7 +19,8 @@ const REGION = process.env.AWS_REGION ?? "us-east-1";
 const MODEL_ID = process.env.BEDROCK_EMBEDDING_MODEL_ID ?? "amazon.titan-embed-text-v2:0";
 const DRY_RUN = process.argv.includes("--dry-run");
 const LIMIT = parseInt(process.argv[process.argv.indexOf("--limit") + 1] || "0") || Infinity;
-const CONCURRENCY = 5;
+const CONCURRENCY = 2;
+const BATCH_DELAY_MS = 1500;
 
 if (!DRY_RUN && !TABLE_NAME) {
   console.error("TABLE_NAME required (or use --dry-run)");
@@ -118,6 +119,7 @@ async function main() {
       if (r.status === "fulfilled" && r.value) processed++;
       else { errors++; console.error(`  ERROR:`, r.status === "rejected" ? r.reason : "unknown"); }
     }
+    if (i + CONCURRENCY < missing.length) await new Promise(r => setTimeout(r, BATCH_DELAY_MS));
   }
 
   console.log(`\n--- Summary ---`);
