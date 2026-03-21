@@ -566,6 +566,8 @@ resource "aws_api_gateway_deployment" "this" {
       aws_api_gateway_resource.capture.id,
       aws_api_gateway_method.health_get.id,
       aws_api_gateway_method.capture_post.id,
+      aws_api_gateway_method.capture_post.authorization,
+      aws_api_gateway_method.capture_post.api_key_required,
       aws_api_gateway_integration.health_mock.id,
       aws_api_gateway_integration.capture_sfn.id,
       var.search_lambda_invoke_arn,

@@ -10,12 +10,14 @@ This file defines the exact contract for all MCP tools exposed via AgentCore Gat
 
 | Tool | Lambda | Operation | Auth |
 |---|---|---|---|
-| `read_node` | Graph | Read single node + edges | OAuth (read) |
-| `list_nodes` | Graph | List/filter nodes | OAuth (read) |
-| `search` | Search | Hybrid keyword + semantic | OAuth (read) |
-| `add_node` | Capture | Create seed node | OAuth (write) |
-| `connect_nodes` | Capture | Create edge between nodes | OAuth (write) |
-| `flag_stale` | Surfacing | Mark node for review | OAuth (write) |
+| `read_node` | Graph | Read single node + edges | IAM (AgentCore) |
+| `list_nodes` | Graph | List/filter nodes | IAM (AgentCore) |
+| `search` | Search | Hybrid keyword + semantic | IAM (AgentCore) |
+| `add_node` | Capture | Create seed node | IAM (AgentCore) |
+| `connect_nodes` | Capture | Create edge between nodes | IAM (AgentCore) |
+| `flag_stale` | Surfacing | Mark node for review | IAM (AgentCore) |
+
+MCP tools are invoked by AgentCore Runtime, which calls Lambda directly via IAM (SigV4) — not through API Gateway. Cognito JWT auth applies only to the REST API human door.
 
 ## Tool definitions
 

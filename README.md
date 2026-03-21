@@ -74,7 +74,7 @@ flowchart TB
 
 | Door | Protocol | Auth | Use case |
 |---|---|---|---|
-| Human | REST API (API Gateway) | API key for writes, open reads | SPA, curl, integrations |
+| Human | REST API (API Gateway) | Cognito JWT for writes, open reads | SPA, curl, integrations |
 | Agent | MCP (AgentCore Gateway) | OAuth + semantic discovery | AI agents, Copilot, Claude |
 
 Both doors call the same Lambda functions — the difference is protocol and auth.
@@ -95,7 +95,7 @@ Real cost data from production: [`docs/benchmarks/results.md`](docs/benchmarks/r
 
 | Method | Endpoint | Description | Auth |
 |---|---|---|---|
-| `POST` | `/capture` | Ingest text → Bedrock classifies → DynamoDB | API key |
+| `POST` | `/capture` | Ingest text → Bedrock classifies → DynamoDB | Cognito JWT |
 | `GET` | `/search?q=` | Hybrid keyword + semantic search | None |
 | `GET` | `/graph` | Full knowledge graph (nodes + edges) | None |
 | `GET` | `/nodes/{id}` | Single node with edges and related nodes | None |

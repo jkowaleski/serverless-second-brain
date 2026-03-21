@@ -47,7 +47,7 @@ No layer may bypass another. Interface never talks directly to Memory.
 
 | Service | Role | Key constraint |
 |---|---|---|
-| API Gateway REST | Human door — SPA and external clients | Throttling, API keys for writes, CORS |
+| API Gateway REST | Human door — SPA and external clients | Throttling, Cognito JWT for writes, CORS |
 | AgentCore Gateway | Agent door — MCP tools | OAuth, semantic discovery, protocol translation |
 | CloudFront + S3 | Static frontend (Next.js export) | OAC, security headers, cache policies |
 
