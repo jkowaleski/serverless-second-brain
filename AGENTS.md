@@ -85,6 +85,7 @@ Rollback: `./scripts/rollback-agent.sh` (dry-run by default, `--execute` to dele
 |---|---|
 | [001](docs/decisions/001-lambda-packaging-and-framework.md) | Lambda packaging and framework |
 | [002](docs/decisions/002-mcp-write-safety.md) | MCP write safety — 6 quality controls for agent mutations |
+| [003](docs/decisions/003-authentication-and-visibility.md) | Authentication (Cognito) and content visibility (public/private) |
 
 ## Performance and cost
 
