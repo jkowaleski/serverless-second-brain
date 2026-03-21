@@ -94,6 +94,10 @@ resource "aws_lambda_function" "this" {
   }
 
   depends_on = [aws_cloudwatch_log_group.this]
+
+  lifecycle {
+    ignore_changes = [filename, source_code_hash]
+  }
 }
 
 # Placeholder zip so Terraform can create the function before CI deploys real code
