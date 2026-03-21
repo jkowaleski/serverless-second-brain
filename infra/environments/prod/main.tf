@@ -279,6 +279,8 @@ module "api_gateway" {
   search_lambda_function_name = module.search_lambda.function_name
   graph_lambda_invoke_arn     = module.graph_lambda.invoke_arn
   graph_lambda_function_name  = module.graph_lambda.function_name
+  enable_search               = true
+  enable_graph                = true
   cors_allow_origin           = var.cors_allow_origin
 }
 

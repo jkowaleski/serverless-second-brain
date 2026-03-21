@@ -44,6 +44,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "this" {
     id     = "archive-old-versions"
     status = "Enabled"
 
+    filter {}
+
     noncurrent_version_transition {
       noncurrent_days = var.glacier_transition_days
       storage_class   = "GLACIER"

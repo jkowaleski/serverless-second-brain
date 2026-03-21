@@ -37,6 +37,18 @@ variable "graph_lambda_function_name" {
   default     = ""
 }
 
+variable "enable_search" {
+  description = "Enable /search route"
+  type        = bool
+  default     = false
+}
+
+variable "enable_graph" {
+  description = "Enable /graph and /nodes/{id} routes"
+  type        = bool
+  default     = false
+}
+
 variable "cors_allow_origin" {
   description = "CORS allowed origin"
   type        = string
@@ -279,14 +291,14 @@ EOF
 # ─── /search (Lambda proxy) ───
 
 resource "aws_api_gateway_resource" "search" {
-  count       = var.search_lambda_invoke_arn != "" ? 1 : 0
+  count       = var.enable_search ? 1 : 0
   rest_api_id = aws_api_gateway_rest_api.this.id
   parent_id   = aws_api_gateway_rest_api.this.root_resource_id
   path_part   = "search"
 }
 
 resource "aws_api_gateway_method" "search_get" {
-  count         = var.search_lambda_invoke_arn != "" ? 1 : 0
+  count         = var.enable_search ? 1 : 0
   rest_api_id   = aws_api_gateway_rest_api.this.id
   resource_id   = aws_api_gateway_resource.search[0].id
   http_method   = "GET"
@@ -294,7 +306,7 @@ resource "aws_api_gateway_method" "search_get" {
 }
 
 resource "aws_api_gateway_integration" "search_lambda" {
-  count                   = var.search_lambda_invoke_arn != "" ? 1 : 0
+  count                   = var.enable_search ? 1 : 0
   rest_api_id             = aws_api_gateway_rest_api.this.id
   resource_id             = aws_api_gateway_resource.search[0].id
   http_method             = aws_api_gateway_method.search_get[0].http_method
@@ -304,7 +316,7 @@ resource "aws_api_gateway_integration" "search_lambda" {
 }
 
 resource "aws_lambda_permission" "apigw_search" {
-  count         = var.search_lambda_function_name != "" ? 1 : 0
+  count         = var.enable_search ? 1 : 0
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = var.search_lambda_function_name
@@ -315,14 +327,14 @@ resource "aws_lambda_permission" "apigw_search" {
 # ─── /graph (Lambda proxy) ───
 
 resource "aws_api_gateway_resource" "graph" {
-  count       = var.graph_lambda_invoke_arn != "" ? 1 : 0
+  count       = var.enable_graph ? 1 : 0
   rest_api_id = aws_api_gateway_rest_api.this.id
   parent_id   = aws_api_gateway_rest_api.this.root_resource_id
   path_part   = "graph"
 }
 
 resource "aws_api_gateway_method" "graph_get" {
-  count         = var.graph_lambda_invoke_arn != "" ? 1 : 0
+  count         = var.enable_graph ? 1 : 0
   rest_api_id   = aws_api_gateway_rest_api.this.id
   resource_id   = aws_api_gateway_resource.graph[0].id
   http_method   = "GET"
@@ -330,7 +342,7 @@ resource "aws_api_gateway_method" "graph_get" {
 }
 
 resource "aws_api_gateway_integration" "graph_lambda" {
-  count                   = var.graph_lambda_invoke_arn != "" ? 1 : 0
+  count                   = var.enable_graph ? 1 : 0
   rest_api_id             = aws_api_gateway_rest_api.this.id
   resource_id             = aws_api_gateway_resource.graph[0].id
   http_method             = aws_api_gateway_method.graph_get[0].http_method
@@ -340,7 +352,7 @@ resource "aws_api_gateway_integration" "graph_lambda" {
 }
 
 resource "aws_lambda_permission" "apigw_graph" {
-  count         = var.graph_lambda_function_name != "" ? 1 : 0
+  count         = var.enable_graph ? 1 : 0
   statement_id  = "AllowAPIGatewayInvokeGraph"
   action        = "lambda:InvokeFunction"
   function_name = var.graph_lambda_function_name
@@ -351,21 +363,21 @@ resource "aws_lambda_permission" "apigw_graph" {
 # ─── /nodes/{id} (Lambda proxy → Graph Lambda) ───
 
 resource "aws_api_gateway_resource" "nodes" {
-  count       = var.graph_lambda_invoke_arn != "" ? 1 : 0
+  count       = var.enable_graph ? 1 : 0
   rest_api_id = aws_api_gateway_rest_api.this.id
   parent_id   = aws_api_gateway_rest_api.this.root_resource_id
   path_part   = "nodes"
 }
 
 resource "aws_api_gateway_resource" "nodes_id" {
-  count       = var.graph_lambda_invoke_arn != "" ? 1 : 0
+  count       = var.enable_graph ? 1 : 0
   rest_api_id = aws_api_gateway_rest_api.this.id
   parent_id   = aws_api_gateway_resource.nodes[0].id
   path_part   = "{id}"
 }
 
 resource "aws_api_gateway_method" "nodes_id_get" {
-  count         = var.graph_lambda_invoke_arn != "" ? 1 : 0
+  count         = var.enable_graph ? 1 : 0
   rest_api_id   = aws_api_gateway_rest_api.this.id
   resource_id   = aws_api_gateway_resource.nodes_id[0].id
   http_method   = "GET"
@@ -377,7 +389,7 @@ resource "aws_api_gateway_method" "nodes_id_get" {
 }
 
 resource "aws_api_gateway_integration" "nodes_id_lambda" {
-  count                   = var.graph_lambda_invoke_arn != "" ? 1 : 0
+  count                   = var.enable_graph ? 1 : 0
   rest_api_id             = aws_api_gateway_rest_api.this.id
   resource_id             = aws_api_gateway_resource.nodes_id[0].id
   http_method             = aws_api_gateway_method.nodes_id_get[0].http_method
