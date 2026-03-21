@@ -48,7 +48,7 @@ variable "bedrock_embedding_model_id" {
 variable "digest_email" {
   description = "Email address for daily digest notifications"
   type        = string
-  default     = ""
+  default     = "jonmatum@gmail.com"
 }
 
 variable "cors_allow_origin" {

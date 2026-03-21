@@ -37,7 +37,7 @@ jobs:
 
       - name: Terraform Apply
         working-directory: infra/environments/dev
-        run: terraform apply -auto-approve -no-color -var='digest_email=${{ secrets.DIGEST_EMAIL }}'
+        run: terraform apply -auto-approve -no-color
 
   apply-prod:
     name: Apply (prod)
@@ -62,4 +62,4 @@ jobs:
 
       - name: Terraform Apply
         working-directory: infra/environments/prod
-        run: terraform apply -auto-approve -no-color -var='digest_email=${{ secrets.DIGEST_EMAIL }}'
+        run: terraform apply -auto-approve -no-color
