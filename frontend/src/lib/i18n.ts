@@ -92,9 +92,7 @@ const dict = {
   "dashboard.edges_count": { es: "{count} aristas", en: "{count} edges" },
 
   // Listing
-  "listing.sort.edges": { es: "M\u00e1s conectados", en: "Most connected" },
-  "listing.sort.alpha": { es: "Alfab\u00e9tico", en: "Alphabetical" },
-  "listing.sort": { es: "Ordenar por", en: "Sort by" },
+  "listing.filter": { es: "Filtrar...", en: "Filter..." },
   "listing.empty": { es: "No hay nodos con estos filtros.", en: "No nodes match these filters." },
 
   // Timeline

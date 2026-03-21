@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { Search, X } from "lucide-react";
 import { api } from "@/lib/api";
 import type { GraphNode } from "@/lib/types";
 import { NodeCard } from "@/components/node-card";
+import { StatusIcon } from "@/components/badges";
 import { t, typeLabel, statusLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
 
@@ -11,53 +13,78 @@ export function ListingPage({ nodeType }: { nodeType: string }) {
   const { locale } = usePrefs();
   const [nodes, setNodes] = useState<GraphNode[]>([]);
   const [status, setStatus] = useState("");
-  const [sort, setSort] = useState<"edges" | "title">("edges");
+  const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    api.graph({ type: nodeType, status: status || undefined }).then((d) => {
+    api.graph({ type: nodeType }).then((d) => {
       setNodes(d.nodes);
       setLoading(false);
     }).catch(() => setLoading(false));
-  }, [nodeType, status]);
+  }, [nodeType]);
 
-  const sorted = [...nodes].sort((a, b) =>
-    sort === "edges" ? b.edge_count - a.edge_count : a.title.localeCompare(b.title),
-  );
+  const filtered = useMemo(() => {
+    let list = nodes;
+    if (status) list = list.filter((n) => n.status === status);
+    if (query.length >= 2) {
+      const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+      list = list.filter((n) => terms.every((term) => n.title.toLowerCase().includes(term)));
+    }
+    return list.sort((a, b) => a.title.localeCompare(b.title, locale));
+  }, [nodes, status, query, locale]);
 
   return (
     <div className="space-y-5">
-      <div className="space-y-3 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-4">
-        <div className="flex items-baseline gap-3">
-          <h1 className="text-2xl font-semibold">{typeLabel(nodeType, locale)}s</h1>
-          {!loading && <span className="text-sm text-[var(--color-muted)]">{sorted.length}</span>}
-        </div>
-        <div className="flex items-center gap-2">
-          <select value={status || "_all"} onChange={(e) => setStatus(e.target.value === "_all" ? "" : e.target.value)} aria-label={t("filter.status", locale)}
-            className="rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-1.5 text-sm outline-none">
-            <option value="_all">{t("filter.all_statuses", locale)}</option>
-            {STATUSES.map((st) => <option key={st} value={st}>{statusLabel(st, locale)}</option>)}
-          </select>
-          <select value={sort} onChange={(e) => setSort(e.target.value as "edges" | "title")} aria-label={t("listing.sort", locale)}
-            className="rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-1.5 text-sm outline-none">
-            <option value="edges">{t("listing.sort.edges", locale)}</option>
-            <option value="title">{t("listing.sort.alpha", locale)}</option>
-          </select>
-        </div>
+      <div>
+        <h1 className="text-2xl font-semibold">{typeLabel(nodeType, locale)}s</h1>
+        <p className="mt-1 text-sm text-[var(--color-muted)]">{t(`home.${nodeType}s.desc` as Parameters<typeof t>[0], locale)}</p>
       </div>
+
+      {/* Status filter pills */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="text-[10px] font-medium uppercase tracking-wider text-[var(--color-muted)]">{t("filter.status", locale)}</span>
+        {STATUSES.map((st) => (
+          <button key={st} onClick={() => setStatus(status === st ? "" : st)}
+            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
+              !status || status === st
+                ? "border-[var(--color-border)] text-[var(--color-fg)]"
+                : "border-transparent text-[var(--color-muted)] opacity-40"
+            }`}>
+            <StatusIcon status={st} className="h-3 w-3" />
+            {statusLabel(st, locale)}
+          </button>
+        ))}
+      </div>
+
+      {/* Search input */}
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-muted)]" />
+        <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("listing.filter", locale)}
+          className="w-full rounded-lg border border-[var(--color-border)] bg-transparent py-2 pl-10 pr-9 text-sm outline-none focus:border-[var(--color-accent)]" />
+        {query && (
+          <button onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)] hover:text-[var(--color-fg)]" aria-label="Clear">
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      {(query.length >= 2 || status) && (
+        <p className="text-xs text-[var(--color-muted)]">{filtered.length} / {nodes.length}</p>
+      )}
 
       {loading ? (
         <p className="py-12 text-center text-[var(--color-muted)]">{t("common.loading", locale)}</p>
-      ) : sorted.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <p className="py-12 text-center text-[var(--color-muted)]">{t("listing.empty", locale)}</p>
       ) : (
-        <div className="space-y-2">
-          {sorted.map((n) => (
-            <NodeCard key={n.id} id={n.id} title={n.title} node_type={n.node_type} status={n.status} tags={n.tags}
-              extra={<span className="ml-auto text-xs text-[var(--color-muted)]">{n.edge_count}</span>} />
+        <ul className="space-y-2">
+          {filtered.map((n) => (
+            <li key={n.id}>
+              <NodeCard id={n.id} title={n.title} node_type={n.node_type} status={n.status} tags={n.tags} />
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );

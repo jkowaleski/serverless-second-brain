@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { usePrefs } from "@/lib/prefs";
 import { api } from "@/lib/api";
 import { t } from "@/lib/i18n";
-import { TypeBadge, StatusBadge, TagBadge } from "@/components/badges";
+import { TypeBadge, StatusBadge, TagList } from "@/components/badges";
 
 const TYPES = ["concept", "note", "experiment", "essay"];
 
@@ -63,7 +63,7 @@ export default function Capture() {
             <span className="font-medium">{result.title}</span>
             <TypeBadge type={result.node_type} /><StatusBadge status={result.status} />
           </div>
-          <div className="flex flex-wrap gap-1.5">{result.tags.map((tg) => <TagBadge key={tg} tag={tg} />)}</div>
+          <div className="flex flex-wrap gap-2"><TagList tags={result.tags} /></div>
           <Link to={`/node?id=${result.slug}`} className="inline-block text-sm text-[var(--color-accent)] hover:underline">{t("capture.view_node", locale)}</Link>
         </div>
       )}
