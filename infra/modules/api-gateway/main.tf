@@ -246,8 +246,9 @@ resource "aws_api_gateway_integration_response" "capture_201" {
   }
 
   # Extract the output field from the Step Functions sync response
+  # $.output is a JSON string — $input.json() extracts and unescapes it
   response_templates = {
-    "application/json" = "$util.parseJson($input.json('$.output'))"
+    "application/json" = "$input.json('$.output')"
   }
 
   depends_on = [aws_api_gateway_integration.capture_sfn]
