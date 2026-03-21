@@ -128,6 +128,25 @@ Each phase is independently deployable.
 | 4 — Proactive | EventBridge scheduler, Surfacing Lambda, SNS notifications | #9 |
 | Cross-cutting | Benchmarks, domain-agnostic config, observability | #12, #13, #14 |
 
+## Architecture Decision Records
+
+Every significant technical decision is documented in [`docs/decisions/`](docs/decisions/):
+
+| ADR | Decision | Status |
+|---|---|---|
+| [001](docs/decisions/001-lambda-packaging-and-framework.md) | Lambda packaging (zip) with no web framework | Accepted |
+| [002](docs/decisions/002-mcp-write-safety.md) | Write safety — 6 controls for MCP agent mutations | Accepted |
+| [003](docs/decisions/003-authentication-and-visibility.md) | Cognito authentication and visibility model | Proposed |
+| [004](docs/decisions/004-dynamodb-single-table-design.md) | DynamoDB single-table design with 2 GSIs | Accepted |
+| [005](docs/decisions/005-hybrid-search-strategy.md) | Hybrid keyword + semantic search | Accepted |
+| [006](docs/decisions/006-step-functions-express-capture-pipeline.md) | Step Functions Express for capture pipeline | Accepted |
+| [007](docs/decisions/007-agentcore-gateway-over-self-hosted-mcp.md) | AgentCore Gateway over self-hosted MCP server | Accepted |
+| [008](docs/decisions/008-in-memory-embedding-scan.md) | In-memory embedding scan (temporary) | Accepted |
+| [009](docs/decisions/009-spec-driven-development.md) | Spec-Driven Development approach | Accepted |
+| [010](docs/decisions/010-bedrock-token-optimization.md) | Bedrock token optimization — recent slugs | Accepted |
+| [011](docs/decisions/011-cloudfront-s3-static-hosting.md) | CloudFront + S3 over Vercel/Amplify | Accepted |
+| [012](docs/decisions/012-github-actions-oidc.md) | GitHub Actions OIDC over static credentials | Accepted |
+
 ## Prerequisites
 
 - AWS account with Bedrock model access enabled:
@@ -153,6 +172,7 @@ frontend/                 → Static Next.js export
 
 scripts/                  → Migration, benchmarks, utilities
 docs/decisions/           → ADRs
+docs/benchmarks/          → Performance and cost data
 .kiro/steering/           → SDD specifications
 .github/workflows/        → CI/CD (GitHub Actions OIDC)
 ```
