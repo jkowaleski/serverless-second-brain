@@ -28,3 +28,25 @@ provider "aws" {
     }
   }
 }
+
+# --- Memory Layer ---
+
+module "dynamodb" {
+  source     = "../../modules/dynamodb"
+  table_name = "${var.project_name}-${var.environment}-knowledge-graph"
+}
+
+module "s3_content" {
+  source      = "../../modules/s3"
+  bucket_name = "${var.project_name}-${var.environment}-content"
+}
+
+# --- IAM Policies ---
+
+module "iam" {
+  source             = "../../modules/iam"
+  project_name       = var.project_name
+  environment        = var.environment
+  dynamodb_table_arn = module.dynamodb.table_arn
+  s3_bucket_arn      = module.s3_content.bucket_arn
+}
