@@ -3,14 +3,25 @@
 # Usage: ./scripts/smoke-test.sh [API_URL]
 #
 # Requires: curl, python3, aws CLI with credentials configured.
-# API key is fetched from Terraform output automatically.
+# Cognito credentials are fetched from Terraform output automatically.
 
 set -euo pipefail
 
-API_URL="${1:-https://3wzbyt9i47.execute-api.us-east-1.amazonaws.com/dev}"
 REGION="us-east-1"
 PROJECT="ssb"
 ENV="dev"
+INFRA_DIR="$(cd "$(dirname "$0")/../infra/environments/$ENV" && pwd)"
+
+# Resolve API URL: argument > SSM > Terraform > hardcoded fallback
+if [ -n "${1:-}" ]; then
+  API_URL="$1"
+elif API_URL=$(aws ssm get-parameter --name "/$PROJECT/$ENV/api/url" --query Parameter.Value --output text --region "$REGION" 2>/dev/null); then
+  :
+elif API_URL=$(cd "$INFRA_DIR" && terraform output -raw api_gateway_invoke_url 2>/dev/null); then
+  :
+else
+  API_URL="https://3wzbyt9i47.execute-api.us-east-1.amazonaws.com/dev"
+fi
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -31,6 +42,27 @@ check() {
   fi
 }
 
+# Retry wrapper: curl_retry URL [extra curl args...]
+# Retries up to 3 times on 500/502/503/504 or curl timeout, with 3s backoff.
+curl_retry() {
+  local url=$1; shift
+  local attempt max_attempts=3 status
+  for attempt in $(seq 1 $max_attempts); do
+    status=$(curl -s -o /tmp/smoke-last.json -w '%{http_code}' --max-time 30 "$@" "$url" 2>/dev/null || echo "000")
+    case "$status" in
+      500|502|503|504|000)
+        if [ "$attempt" -lt "$max_attempts" ]; then
+          sleep 3
+          continue
+        fi
+        ;;
+    esac
+    break
+  done
+  # Copy response to the caller's output file if -o was in the args
+  echo "$status"
+}
+
 echo "============================================"
 echo " Smoke Test — $API_URL"
 echo "============================================"
@@ -41,7 +73,8 @@ echo "============================================"
 echo ""
 echo "🏥 Health"
 
-STATUS=$(curl -s -o /tmp/smoke-health.json -w '%{http_code}' "$API_URL/health")
+STATUS=$(curl_retry "$API_URL/health")
+cp /tmp/smoke-last.json /tmp/smoke-health.json 2>/dev/null || true
 check "GET /health" "200" "$STATUS"
 
 HEADERS=$(curl -sI "$API_URL/graph" 2>&1)
@@ -53,27 +86,30 @@ echo "$HEADERS" | grep -qi "content-type: application/json" && check "Content-Ty
 echo ""
 echo "📖 Read API"
 
-STATUS=$(curl -s -o /tmp/smoke-graph.json -w '%{http_code}' --max-time 30 "$API_URL/graph")
+STATUS=$(curl_retry "$API_URL/graph")
+cp /tmp/smoke-last.json /tmp/smoke-graph.json 2>/dev/null || true
 NODES=$(python3 -c "import json; d=json.load(open('/tmp/smoke-graph.json')); print(d['meta']['node_count'])" 2>/dev/null || echo "?")
 EDGES=$(python3 -c "import json; d=json.load(open('/tmp/smoke-graph.json')); print(d['meta']['edge_count'])" 2>/dev/null || echo "?")
 check "GET /graph ($NODES nodes, $EDGES edges)" "200" "$STATUS"
 
 SLUG=$(python3 -c "import json; print(json.load(open('/tmp/smoke-graph.json'))['nodes'][0]['id'])" 2>/dev/null || echo "")
 if [ -n "$SLUG" ]; then
-  STATUS=$(curl -s -o /tmp/smoke-node.json -w '%{http_code}' "$API_URL/nodes/$SLUG")
+  STATUS=$(curl_retry "$API_URL/nodes/$SLUG")
+  cp /tmp/smoke-last.json /tmp/smoke-node.json 2>/dev/null || true
   RELATED=$(python3 -c "import json; print(len(json.load(open('/tmp/smoke-node.json')).get('related',[])))" 2>/dev/null || echo "?")
   check "GET /nodes/$SLUG ($RELATED related)" "200" "$STATUS"
 fi
 
-STATUS=$(curl -s -o /tmp/smoke-404.json -w '%{http_code}' "$API_URL/nodes/nonexistent-slug-xyz")
+STATUS=$(curl_retry "$API_URL/nodes/nonexistent-slug-xyz")
 check "GET /nodes/nonexistent (404)" "404" "$STATUS"
 
-STATUS=$(curl -s -o /tmp/smoke-search.json -w '%{http_code}' --max-time 30 "$API_URL/search?q=serverless")
+STATUS=$(curl_retry "$API_URL/search?q=serverless")
+cp /tmp/smoke-last.json /tmp/smoke-search.json 2>/dev/null || true
 RESULTS=$(python3 -c "import json; print(json.load(open('/tmp/smoke-search.json'))['total'])" 2>/dev/null || echo "?")
 TOOK=$(python3 -c "import json; print(json.load(open('/tmp/smoke-search.json'))['took_ms'])" 2>/dev/null || echo "?")
 check "GET /search?q=serverless ($RESULTS results, ${TOOK}ms)" "200" "$STATUS"
 
-STATUS=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/search")
+STATUS=$(curl_retry "$API_URL/search")
 check "GET /search (no q → 400)" "400" "$STATUS"
 
 # ==========================================
@@ -82,7 +118,6 @@ check "GET /search (no q → 400)" "400" "$STATUS"
 echo ""
 echo "✏️  Capture pipeline"
 
-INFRA_DIR="$(dirname "$0")/../infra/environments/$ENV"
 COGNITO_DOMAIN=$(cd "$INFRA_DIR" && terraform output -raw cognito_domain 2>/dev/null || echo "")
 MCP_CLIENT_ID=$(cd "$INFRA_DIR" && terraform output -raw cognito_mcp_client_id 2>/dev/null || echo "")
 MCP_SECRET=$(cd "$INFRA_DIR" && terraform output -raw cognito_mcp_client_secret 2>/dev/null || echo "")
@@ -99,7 +134,8 @@ else
     echo -e "  ${YELLOW}⏭  Skipping POST /capture — could not obtain Cognito token${NC}"
   else
     TIMESTAMP=$(date +%s)
-    STATUS=$(curl -s -o /tmp/smoke-capture.json -w '%{http_code}' --max-time 25 -X POST "$API_URL/capture" \
+    STATUS=$(curl_retry "$API_URL/capture" \
+      -X POST \
       -H "Content-Type: application/json" \
       -H "Authorization: Bearer $TOKEN" \
       -d "{
@@ -107,11 +143,12 @@ else
         \"type\": \"note\",
         \"language\": \"en\"
       }")
+    cp /tmp/smoke-last.json /tmp/smoke-capture.json 2>/dev/null || true
     CREATED_SLUG=$(python3 -c "import json; d=json.load(open('/tmp/smoke-capture.json')); print(d.get('slug','?') if isinstance(d,dict) else json.loads(d).get('slug','?'))" 2>/dev/null || echo "?")
     check "POST /capture → $CREATED_SLUG" "201" "$STATUS"
 
     if [ "$STATUS" = "201" ] && [ "$CREATED_SLUG" != "?" ]; then
-      STATUS=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $TOKEN" "$API_URL/nodes/$CREATED_SLUG")
+      STATUS=$(curl_retry "$API_URL/nodes/$CREATED_SLUG" -H "Authorization: Bearer $TOKEN")
       check "GET /nodes/$CREATED_SLUG (verify created)" "200" "$STATUS"
     fi
   fi
@@ -140,7 +177,7 @@ if [ -n "$SLUG" ]; then
   fi
 fi
 
-RUNTIME_ID=$(cd "$(dirname "$0")/../infra/environments/$ENV" && terraform output -raw agentcore_runtime_id 2>/dev/null || echo "")
+RUNTIME_ID=$(cd "$INFRA_DIR" && terraform output -raw agentcore_runtime_id 2>/dev/null || echo "")
 if [ -n "$RUNTIME_ID" ]; then
   check "AgentCore Runtime ($RUNTIME_ID)" "present" "present"
 else
