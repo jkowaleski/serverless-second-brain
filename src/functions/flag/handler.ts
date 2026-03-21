@@ -7,17 +7,20 @@ interface FlagRequest {
   actor?: string;
 }
 
+const CORS_ORIGIN = process.env.CORS_ALLOW_ORIGIN ?? "*";
+const HEADERS = { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN };
+
 export const handler = async (event: Record<string, unknown>) => {
   try {
     const body = typeof event.body === "string" ? JSON.parse(event.body) : event;
     const { slug, reason, actor = "api" } = body as FlagRequest;
 
     if (!slug || !reason) {
-      return { statusCode: 400, body: JSON.stringify({ error: "validation_error", message: "slug and reason are required" }) };
+      return { statusCode: 400, headers: HEADERS, body: JSON.stringify({ error: "validation_error", message: "slug and reason are required" }) };
     }
 
     const node = await getNode(slug);
-    if (!node) return { statusCode: 404, body: JSON.stringify({ error: "not_found", message: `Node '${slug}' not found` }) };
+    if (!node) return { statusCode: 404, headers: HEADERS, body: JSON.stringify({ error: "not_found", message: `Node '${slug}' not found` }) };
 
     const now = new Date().toISOString();
     const audit: AuditItem = {
@@ -30,11 +33,11 @@ export const handler = async (event: Record<string, unknown>) => {
 
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: HEADERS,
       body: JSON.stringify({ slug, flagged: true, reason, flagged_at: now }),
     };
   } catch (err) {
     console.error("flag_stale error:", err);
-    return { statusCode: 500, body: JSON.stringify({ error: "internal_error", message: "Failed to flag node" }) };
+    return { statusCode: 500, headers: HEADERS, body: JSON.stringify({ error: "internal_error", message: "Failed to flag node" }) };
   }
 };

@@ -115,3 +115,71 @@ jobs:
           aws lambda update-function-code \
             --function-name ssb-dev-${{ matrix.function }} \
             --zip-file fileb://deploy.zip
+
+  deploy-prod:
+    name: Deploy Prod (${{ matrix.function }})
+    needs: deploy
+    runs-on: ubuntu-latest
+    environment: prod
+    strategy:
+      matrix:
+        include:
+          - function: capture
+            handler_dir: functions/capture
+          - function: capture-validate
+            handler_dir: functions/capture
+          - function: capture-classify
+            handler_dir: functions/capture
+          - function: capture-persist
+            handler_dir: functions/capture
+          - function: capture-edges
+            handler_dir: functions/capture
+          - function: search
+            handler_dir: functions/search
+          - function: graph
+            handler_dir: functions/graph
+          - function: connect
+            handler_dir: functions/connect
+          - function: flag
+            handler_dir: functions/flag
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install production dependencies
+        working-directory: src
+        run: npm ci --omit=dev
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: src/dist/
+
+      - name: Package Lambda
+        run: |
+          mkdir -p package
+          cp -r src/dist/${{ matrix.handler_dir }}/* package/
+          mkdir -p package/shared
+          cp -r src/dist/shared/* package/shared/
+          find package -maxdepth 1 -name '*.js' -exec sed -i 's|\.\./\.\./shared/|./shared/|g' {} +
+          if [ -d package/steps ]; then
+            find package/steps -name '*.js' -exec sed -i 's|\.\./\.\./\.\./shared/|../shared/|g' {} +
+          fi
+          echo '{"type":"module"}' > package/package.json
+          cp -r src/node_modules package/
+          cd package && zip -r ../deploy.zip .
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy
+        run: |
+          aws lambda update-function-code \
+            --function-name ssb-prod-${{ matrix.function }} \
+            --zip-file fileb://deploy.zip

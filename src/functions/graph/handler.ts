@@ -1,5 +1,5 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { getNode, getAllNodes, getAllEdges, getNodeEdges, getInboundEdges } from "../../shared/dynamodb.js";
+import { getNode, getAllNodes, getAllEdges, getNodeEdges, getInboundEdges, batchGetNodes } from "../../shared/dynamodb.js";
 import { NotFoundError } from "../../shared/errors.js";
 import type { MetaItem, EdgeItem } from "../../shared/types.js";
 
@@ -62,7 +62,7 @@ async function handleGraph(event: APIGatewayProxyEvent): Promise<APIGatewayProxy
 
   return {
     statusCode: 200,
-    headers: { "Access-Control-Allow-Origin": CORS_ORIGIN },
+    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN },
     body: JSON.stringify({
       nodes: nodes.map((n) => ({ ...formatNode(n), edge_count: edgeCounts.get(n.slug) ?? 0 })),
       edges: edges.map(formatEdge),
@@ -81,20 +81,17 @@ async function handleNode(slug: string): Promise<APIGatewayProxyResult> {
 
   const [outbound, inbound] = await Promise.all([getNodeEdges(slug), getInboundEdges(slug)]);
 
-  // Fetch related node summaries
-  const relatedSlugs = new Set([
+  // Fetch related node summaries via batch
+  const relatedSlugs = [
     ...outbound.map((e) => e.SK.replace("EDGE#", "")),
     ...inbound.map((e) => e.PK.replace("NODE#", "")),
-  ]);
-  const relatedNodes: Array<{ id: string; title: string; node_type: string; status: string }> = [];
-  for (const rs of relatedSlugs) {
-    const rn = await getNode(rs);
-    if (rn) relatedNodes.push({ id: rn.slug, title: rn.title, node_type: rn.node_type, status: rn.status });
-  }
+  ];
+  const relatedMeta = await batchGetNodes(relatedSlugs);
+  const relatedNodes = relatedMeta.map((rn) => ({ id: rn.slug, title: rn.title, node_type: rn.node_type, status: rn.status }));
 
   return {
     statusCode: 200,
-    headers: { "Access-Control-Allow-Origin": CORS_ORIGIN },
+    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN },
     body: JSON.stringify({
       node: {
         id: node.slug,

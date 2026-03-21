@@ -1,5 +1,5 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, ScanCommand, BatchGetCommand } from "@aws-sdk/lib-dynamodb";
 import type { MetaItem, EdgeItem, EmbedItem, AuditItem } from "./types.js";
 
 const client = new DynamoDBClient({});
@@ -131,5 +131,20 @@ export async function getAllEdges(): Promise<EdgeItem[]> {
     items.push(...(result.Items ?? []) as EdgeItem[]);
     lastKey = result.LastEvaluatedKey as Record<string, unknown> | undefined;
   } while (lastKey);
+  return items;
+}
+
+export async function batchGetNodes(slugs: string[]): Promise<MetaItem[]> {
+  if (slugs.length === 0) return [];
+  const keys = [...new Set(slugs)].map((s) => ({ PK: `NODE#${s}`, SK: "META" }));
+  const items: MetaItem[] = [];
+
+  for (let i = 0; i < keys.length; i += 100) {
+    const batch = keys.slice(i, i + 100);
+    const result = await ddb.send(new BatchGetCommand({
+      RequestItems: { [TABLE_NAME]: { Keys: batch } },
+    }));
+    items.push(...((result.Responses?.[TABLE_NAME] ?? []) as MetaItem[]));
+  }
   return items;
 }

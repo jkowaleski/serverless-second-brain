@@ -6,6 +6,37 @@ const bedrock = new BedrockRuntimeClient({});
 const MODEL_ID = process.env.BEDROCK_MODEL_ID!;
 const EMBEDDING_MODEL_ID = process.env.BEDROCK_EMBEDDING_MODEL_ID ?? "amazon.titan-embed-text-v2:0";
 
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 1000;
+
+const TRANSIENT_ERRORS = ["ThrottlingException", "TooManyRequestsException", "ServiceUnavailableException", "ModelTimeoutException"];
+
+async function invokeWithRetry(params: { modelId: string; body: string }): Promise<Uint8Array> {
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await bedrock.send(new InvokeModelCommand({
+        modelId: params.modelId,
+        contentType: "application/json",
+        accept: "application/json",
+        body: params.body,
+      }));
+      return response.body;
+    } catch (err: unknown) {
+      const errorName = (err as { name?: string }).name ?? "";
+      const isTransient = TRANSIENT_ERRORS.some((e) => errorName.includes(e));
+
+      if (!isTransient || attempt === MAX_RETRIES) {
+        throw new BedrockError(`Bedrock ${params.modelId}: ${errorName} — ${(err as Error).message}`);
+      }
+
+      const delay = BASE_DELAY_MS * Math.pow(2, attempt);
+      console.warn(`Bedrock throttled (${errorName}), retry ${attempt + 1}/${MAX_RETRIES} in ${delay}ms`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw new BedrockError("Bedrock: max retries exceeded");
+}
+
 export async function classify(
   text: string,
   existingSlugs: string[],
@@ -37,18 +68,16 @@ Rules:
 - summaries: concrete and specific, not generic
 - title: concise, no articles`;
 
-  const response = await bedrock.send(new InvokeModelCommand({
+  const responseBody = await invokeWithRetry({
     modelId: MODEL_ID,
-    contentType: "application/json",
-    accept: "application/json",
     body: JSON.stringify({
       anthropic_version: "bedrock-2023-05-31",
       max_tokens: 1024,
       messages: [{ role: "user", content: prompt }],
     }),
-  }));
+  });
 
-  const body = JSON.parse(new TextDecoder().decode(response.body));
+  const body = JSON.parse(new TextDecoder().decode(responseBody));
   const content = body.content?.[0]?.text;
 
   if (!content) {
@@ -65,14 +94,12 @@ Rules:
 }
 
 export async function embed(text: string): Promise<number[]> {
-  const response = await bedrock.send(new InvokeModelCommand({
+  const responseBody = await invokeWithRetry({
     modelId: EMBEDDING_MODEL_ID,
-    contentType: "application/json",
-    accept: "application/json",
     body: JSON.stringify({ inputText: text }),
-  }));
+  });
 
-  const body = JSON.parse(new TextDecoder().decode(response.body));
+  const body = JSON.parse(new TextDecoder().decode(responseBody));
   const vector = body.embedding;
 
   if (!Array.isArray(vector) || vector.length === 0) {

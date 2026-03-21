@@ -91,7 +91,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     return {
       statusCode: 200,
-      headers: { "Access-Control-Allow-Origin": CORS_ORIGIN },
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN },
       body: JSON.stringify({
         query: q,
         results: scored,

@@ -55,10 +55,11 @@ module "iam" {
 
 locals {
   capture_env = {
-    TABLE_NAME       = module.dynamodb.table_name
-    BUCKET_NAME      = module.s3_content.bucket_name
-    BEDROCK_MODEL_ID = var.bedrock_model_id
-    ENVIRONMENT      = var.environment
+    TABLE_NAME                 = module.dynamodb.table_name
+    BUCKET_NAME                = module.s3_content.bucket_name
+    BEDROCK_MODEL_ID           = var.bedrock_model_id
+    BEDROCK_EMBEDDING_MODEL_ID = var.bedrock_embedding_model_id
+    ENVIRONMENT                = var.environment
   }
   capture_policies = [
     module.iam.dynamodb_write_policy_arn,
