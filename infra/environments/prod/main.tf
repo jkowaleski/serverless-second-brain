@@ -140,6 +140,9 @@ module "search_lambda" {
     BEDROCK_EMBEDDING_MODEL_ID = var.bedrock_embedding_model_id
     CORS_ALLOW_ORIGIN          = var.cors_allow_origin
     ENVIRONMENT                = var.environment
+    USER_POOL_ID               = module.cognito.user_pool_id
+    SPA_CLIENT_ID              = module.cognito.spa_client_id
+    MCP_CLIENT_ID              = module.cognito.mcp_client_id
   }
 
   policy_arns = [
@@ -160,6 +163,9 @@ module "graph_lambda" {
     BUCKET_NAME       = module.s3_content.bucket_name
     CORS_ALLOW_ORIGIN = var.cors_allow_origin
     ENVIRONMENT       = var.environment
+    USER_POOL_ID      = module.cognito.user_pool_id
+    SPA_CLIENT_ID     = module.cognito.spa_client_id
+    MCP_CLIENT_ID     = module.cognito.mcp_client_id
   }
 
   policy_arns = [
@@ -286,6 +292,10 @@ module "api_gateway" {
   enable_search               = true
   enable_graph                = true
   cors_allow_origin           = var.cors_allow_origin
+
+  enable_authorizer               = true
+  authorizer_lambda_invoke_arn    = module.authorizer_lambda.invoke_arn
+  authorizer_lambda_function_name = module.authorizer_lambda.function_name
 }
 
 module "cloudfront" {
@@ -496,6 +506,22 @@ module "cognito" {
   environment   = var.environment
   callback_urls = var.cognito_callback_urls
   logout_urls   = var.cognito_logout_urls
+}
+
+module "authorizer_lambda" {
+  source        = "../../modules/lambda"
+  function_name = "${var.project_name}-${var.environment}-authorizer"
+  handler       = "handler.handler"
+  memory_size   = 128
+  timeout       = 5
+
+  environment_variables = {
+    USER_POOL_ID  = module.cognito.user_pool_id
+    SPA_CLIENT_ID = module.cognito.spa_client_id
+    MCP_CLIENT_ID = module.cognito.mcp_client_id
+  }
+
+  policy_arns = []
 }
 
 # --- Phase 3: AgentCore Runtime (#8) ---

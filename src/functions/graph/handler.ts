@@ -1,6 +1,7 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { getNode, getAllNodes, getAllEdges, getNodeEdges, getInboundEdges, batchGetNodes } from "../../shared/dynamodb.js";
 import { NotFoundError } from "../../shared/errors.js";
+import { isAuthenticated } from "../../shared/auth.js";
 import type { MetaItem, EdgeItem } from "../../shared/types.js";
 
 // In-memory cache for warm invocations
@@ -40,9 +41,11 @@ function formatNode(n: MetaItem) {
 async function handleGraph(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   const typeFilter = event.queryStringParameters?.type;
   const statusFilter = event.queryStringParameters?.status;
+  const authed = await isAuthenticated(event);
   const graph = await loadGraph();
 
   let nodes = graph.nodes;
+  if (!authed) nodes = nodes.filter((n) => n.visibility !== "private");
   if (typeFilter) nodes = nodes.filter((n) => n.node_type === typeFilter);
   if (statusFilter) nodes = nodes.filter((n) => n.status === statusFilter);
 
@@ -75,9 +78,10 @@ async function handleGraph(event: APIGatewayProxyEvent): Promise<APIGatewayProxy
   };
 }
 
-async function handleNode(slug: string): Promise<APIGatewayProxyResult> {
+async function handleNode(slug: string, authed: boolean): Promise<APIGatewayProxyResult> {
   const node = await getNode(slug);
   if (!node) throw new NotFoundError(`Node '${slug}' not found`);
+  if (!authed && node.visibility === "private") throw new NotFoundError(`Node '${slug}' not found`);
 
   const [outbound, inbound] = await Promise.all([getNodeEdges(slug), getInboundEdges(slug)]);
 
@@ -121,7 +125,7 @@ async function handleNode(slug: string): Promise<APIGatewayProxyResult> {
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     const nodeId = event.pathParameters?.id;
-    if (nodeId) return await handleNode(nodeId);
+    if (nodeId) return await handleNode(nodeId, await isAuthenticated(event));
     return await handleGraph(event);
   } catch (error) {
     if (error instanceof NotFoundError) {

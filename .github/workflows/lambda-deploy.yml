@@ -73,6 +73,9 @@ jobs:
           # Surfacing Lambda (Phase 4)
           - function: surfacing
             handler_dir: functions/surfacing
+          # Authorizer Lambda (Auth)
+          - function: authorizer
+            handler_dir: functions/authorizer
     steps:
       - uses: actions/checkout@v4
 
@@ -147,6 +150,8 @@ jobs:
             handler_dir: functions/flag
           - function: surfacing
             handler_dir: functions/surfacing
+          - function: authorizer
+            handler_dir: functions/authorizer
     steps:
       - uses: actions/checkout@v4
 

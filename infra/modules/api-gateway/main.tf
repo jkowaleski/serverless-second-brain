@@ -55,6 +55,24 @@ variable "cors_allow_origin" {
   default     = "*"
 }
 
+variable "authorizer_lambda_invoke_arn" {
+  description = "Invoke ARN of the authorizer Lambda"
+  type        = string
+  default     = ""
+}
+
+variable "authorizer_lambda_function_name" {
+  description = "Function name of the authorizer Lambda"
+  type        = string
+  default     = ""
+}
+
+variable "enable_authorizer" {
+  description = "Enable Lambda authorizer on endpoints"
+  type        = bool
+  default     = false
+}
+
 variable "throttle_burst" {
   description = "API-level burst throttle limit"
   type        = number
@@ -515,6 +533,27 @@ resource "aws_api_gateway_integration_response" "health_options_200" {
   depends_on = [aws_api_gateway_integration.health_options]
 }
 
+# ─── Lambda Authorizer ───
+
+resource "aws_api_gateway_authorizer" "cognito" {
+  count                            = var.enable_authorizer ? 1 : 0
+  name                             = "${var.api_name}-cognito"
+  rest_api_id                      = aws_api_gateway_rest_api.this.id
+  type                             = "REQUEST"
+  authorizer_uri                   = var.authorizer_lambda_invoke_arn
+  authorizer_result_ttl_in_seconds = 0
+  identity_source                  = ""
+}
+
+resource "aws_lambda_permission" "apigw_authorizer" {
+  count         = var.enable_authorizer ? 1 : 0
+  statement_id  = "AllowAPIGatewayInvokeAuthorizer"
+  action        = "lambda:InvokeFunction"
+  function_name = var.authorizer_lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*"
+}
+
 # ─── Deployment + Stage ───
 
 resource "aws_api_gateway_deployment" "this" {
@@ -530,6 +569,7 @@ resource "aws_api_gateway_deployment" "this" {
       aws_api_gateway_integration.capture_sfn.id,
       var.search_lambda_invoke_arn,
       var.graph_lambda_invoke_arn,
+      var.authorizer_lambda_invoke_arn,
     ]))
   }
 
@@ -678,4 +718,8 @@ output "api_key_value" {
 
 output "stage_name" {
   value = aws_api_gateway_stage.this.stage_name
+}
+
+output "authorizer_id" {
+  value = var.enable_authorizer ? aws_api_gateway_authorizer.cognito[0].id : ""
 }

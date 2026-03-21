@@ -168,6 +168,11 @@ output "cognito_mcp_client_id" {
   value = module.cognito.mcp_client_id
 }
 
+output "cognito_mcp_client_secret" {
+  value     = module.cognito.mcp_client_secret
+  sensitive = true
+}
+
 output "cognito_domain" {
   value = module.cognito.domain
 }

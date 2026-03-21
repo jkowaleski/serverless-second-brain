@@ -72,7 +72,7 @@ Each state passes its output as input to the next. Intermediate payloads:
 
 ### Retry policy
 
-- GenerateMetadata: retry 3 times, backoff 2s/4s/8s, on `BedrockError` or `States.TaskFailed`
+- GenerateMetadata: retry 3 times, backoff 2s/4s/8s, on `BedrockError`
 - PersistNode: retry 2 times, backoff 1s/2s, on `States.TaskFailed`
 
 ### Error output

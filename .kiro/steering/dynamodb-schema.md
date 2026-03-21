@@ -63,7 +63,8 @@ This file defines the exact schema for the DynamoDB knowledge graph table. All c
   "updated_at": "2026-03-19T10:30:00Z",
   "created_by": "human | agent",
   "word_count_es": 1200,
-  "word_count_en": 1100
+  "word_count_en": 1100,
+  "visibility": "public | private"
 }
 ```
 

@@ -2,6 +2,7 @@ import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { getAllNodes, getAllEmbeddings } from "../../shared/dynamodb.js";
 import { embed } from "../../shared/bedrock.js";
 import { ValidationError } from "../../shared/errors.js";
+import { isAuthenticated } from "../../shared/auth.js";
 import type { MetaItem, EmbedItem } from "../../shared/types.js";
 
 const KEYWORD_WEIGHT = 0.3;
@@ -44,6 +45,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const statusFilter = event.queryStringParameters?.status;
 
     const start = Date.now();
+    const authed = await isAuthenticated(event);
 
     // Load or use cache
     if (!cachedNodes || !cachedEmbeddings || Date.now() - cacheTime > CACHE_TTL_MS) {
@@ -65,6 +67,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     // Score all nodes
     const scored = cachedNodes
       .filter((n) => (!typeFilter || n.node_type === typeFilter) && (!statusFilter || n.status === statusFilter))
+      .filter((n) => authed || n.visibility !== "private")
       .map((node) => {
         const kw = keywordScore(node, terms);
         const vec = embedMap.get(node.slug);
