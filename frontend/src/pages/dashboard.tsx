@@ -6,7 +6,7 @@ import type { GraphResponse } from "@/lib/types";
 import { TYPE_COLORS } from "@/lib/constants";
 import { StatusIcon, StatusBadge } from "@/components/badges";
 import { DashboardSkeleton } from "@/components/skeletons";
-import { t, typeLabel, statusLabel } from "@/lib/i18n";
+import { t, localized, typeLabel, statusLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
 
 const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -133,7 +133,7 @@ function DashboardList({ title, items, locale }: { title: string; locale: string
       <h2 className="text-sm font-medium text-[var(--color-muted)]">{title}</h2>
       <ul className="space-y-1">
         {items.map((n) => {
-          const label = (locale === "es" ? n.title_es : n.title_en) || n.title;
+          const label = localized(n, "title", locale as "es" | "en");
           return (
             <li key={n.id}>
               <Link to={`/node?id=${n.id}`} className="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-[var(--color-border)]">

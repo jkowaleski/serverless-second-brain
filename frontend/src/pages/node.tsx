@@ -79,8 +79,8 @@ export default function NodePage() {
           </h2>
           <ul className="space-y-2">
             {related.map((r) => {
-              const rTitle = (locale === "es" ? r.title_es : r.title_en) || r.title;
-              const rSummary = locale === "es" ? r.summary_es : r.summary_en;
+              const rTitle = localized(r, "title", locale);
+              const rSummary = localized(r, "summary", locale);
               return (
                 <li key={r.id}>
                   <Link to={`/node?id=${r.id}`} className="block rounded-lg border border-[var(--color-border)] p-3 transition-colors hover:border-[var(--color-muted)]">
