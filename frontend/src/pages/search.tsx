@@ -58,7 +58,7 @@ export default function SearchPage() {
         <div className="space-y-2">
           <p className="text-xs text-[var(--color-muted)]">{t("search.results", locale, { count: data.total, s: data.total !== 1 ? "s" : "", ms: data.took_ms })}</p>
           {data.results.map((r) => (
-            <NodeCard key={r.id} id={r.id} title={r.title} summary={localized(r, "summary", locale)} node_type={r.node_type} status={r.status} tags={r.tags} score={r.score} />
+            <NodeCard key={r.id} id={r.id} title={localized(r, "title", locale)} summary={localized(r, "summary", locale)} node_type={r.node_type} status={r.status} tags={r.tags} score={r.score} />
           ))}
           {data.total === 0 && (
             <p className="text-sm text-[var(--color-muted)]">{t("search.no_results", locale, { q: data.query })}</p>

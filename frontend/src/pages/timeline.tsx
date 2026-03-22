@@ -1,22 +1,25 @@
 import { useEffect, useState, useMemo } from "react";
-import { Link } from "react-router-dom";
 import { Search, X } from "lucide-react";
 import { api } from "@/lib/api";
 import type { GraphNode } from "@/lib/types";
-import { StatusBadge } from "@/components/badges";
+import { NodeCard } from "@/components/node-card";
+import { CardListSkeleton } from "@/components/skeletons";
 import { Filters } from "@/components/filters";
-import { TYPE_COLORS } from "@/lib/constants";
 import { t, localized } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
 
 export default function Timeline() {
   const { locale } = usePrefs();
   const [nodes, setNodes] = useState<GraphNode[]>([]);
+  const [loading, setLoading] = useState(true);
   const [type, setType] = useState("");
   const [status, setStatus] = useState("");
   const [query, setQuery] = useState("");
 
-  useEffect(() => { api.graph().then((d) => setNodes(d.nodes)).catch(() => {}); }, []);
+  useEffect(() => {
+    setLoading(true);
+    api.graph().then((d) => { setNodes(d.nodes); setLoading(false); }).catch(() => setLoading(false));
+  }, []);
 
   const filtered = useMemo(() => {
     let list = nodes;
@@ -24,20 +27,20 @@ export default function Timeline() {
     if (status) list = list.filter((n) => n.status === status);
     if (query.length >= 2) {
       const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
-      list = list.filter((n) => terms.every((term) => n.title.toLowerCase().includes(term)));
+      list = list.filter((n) => {
+        const haystack = `${localized(n, "title", locale)} ${localized(n, "summary", locale)} ${(n.tags ?? []).join(" ")}`.toLowerCase();
+        return terms.every((term) => haystack.includes(term));
+      });
     }
-    return list.sort((a, b) => a.title.localeCompare(b.title, locale));
+    return list.sort((a, b) => localized(a, "title", locale).localeCompare(localized(b, "title", locale), locale));
   }, [nodes, type, status, query, locale]);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">{t("timeline.title", locale)}</h1>
-      </div>
+      <h1 className="text-2xl font-semibold">{t("timeline.title", locale)}</h1>
 
       <Filters type={type} status={status} onTypeChange={setType} onStatusChange={setStatus} />
 
-      {/* Search */}
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-muted)]" />
         <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("listing.filter", locale)}
@@ -53,22 +56,15 @@ export default function Timeline() {
         <p className="text-xs text-[var(--color-muted)]">{filtered.length} / {nodes.length}</p>
       )}
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <CardListSkeleton />
+      ) : filtered.length === 0 ? (
         <p className="py-12 text-center text-[var(--color-muted)]">{t("listing.empty", locale)}</p>
       ) : (
         <ul className="space-y-2">
           {filtered.map((n) => (
             <li key={n.id}>
-              <Link to={`/node?id=${n.id}`} className="flex overflow-hidden rounded-lg border border-[var(--color-border)] transition-colors hover:border-[var(--color-muted)]">
-                <div className="w-1 shrink-0 rounded-l-lg" style={{ backgroundColor: TYPE_COLORS[n.node_type] }} />
-                <div className="min-w-0 flex-1 p-3">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="truncate text-sm font-medium">{n.title}</span>
-                    <StatusBadge status={n.status} />
-                  </div>
-                </div>
-                <div className="flex items-center pr-3 text-xs text-[var(--color-muted)]">{n.edge_count}</div>
-              </Link>
+              <NodeCard id={n.id} title={localized(n, "title", locale)} summary={localized(n, "summary", locale) || undefined} node_type={n.node_type} status={n.status} tags={n.tags} />
             </li>
           ))}
         </ul>

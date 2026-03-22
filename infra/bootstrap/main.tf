@@ -144,7 +144,8 @@ resource "aws_iam_role_policy" "github_actions" {
           "ssm:AddTagsToResource",
           "ssm:ListTagsForResource",
           "ssm:RemoveTagsFromResource",
-          "cognito-idp:*"        ]
+          "cognito-idp:*",
+          "cloudwatch:*"        ]
         Resource = "*"
       },
       {
