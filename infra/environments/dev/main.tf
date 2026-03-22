@@ -610,3 +610,21 @@ resource "aws_ssm_parameter" "api_url" {
   type  = "String"
   value = module.api_gateway.invoke_url
 }
+
+resource "aws_ssm_parameter" "cognito_domain" {
+  name  = "/${var.project_name}/${var.environment}/cognito/domain"
+  type  = "String"
+  value = module.cognito.domain
+}
+
+resource "aws_ssm_parameter" "cognito_spa_client_id" {
+  name  = "/${var.project_name}/${var.environment}/cognito/spa-client-id"
+  type  = "String"
+  value = module.cognito.spa_client_id
+}
+
+resource "aws_ssm_parameter" "cognito_user_pool_id" {
+  name  = "/${var.project_name}/${var.environment}/cognito/user-pool-id"
+  type  = "String"
+  value = module.cognito.user_pool_id
+}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { LogIn, Send } from "lucide-react";
+import { LogIn, Send, Loader2, CheckCircle2, ArrowRight } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { usePrefs } from "@/lib/prefs";
 import { api } from "@/lib/api";
@@ -39,6 +39,7 @@ export default function Capture() {
 
   const charCount = text.length;
   const valid = charCount >= 50;
+  const progress = Math.min(charCount / 50, 1);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -56,17 +57,25 @@ export default function Capture() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">{t("capture.title", locale)}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">{t("capture.title", locale)}</h1>
+        <span className="text-xs text-[var(--color-muted)]">{user.email}</span>
+      </div>
 
       {result && (
         <div className="rounded-lg border border-[var(--color-accent)] bg-[var(--color-accent)]/5 p-4 space-y-3">
-          <p className="text-sm font-medium text-[var(--color-accent)]">{t("capture.success", locale)}</p>
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-[var(--color-accent)]" />
+            <p className="text-sm font-medium text-[var(--color-accent)]">{t("capture.success", locale)}</p>
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-medium">{result.title}</span>
             <TypeBadge type={result.node_type} /><StatusBadge status={result.status} />
           </div>
           <div className="flex flex-wrap gap-2"><TagList tags={result.tags} /></div>
-          <Link to={`/node?id=${result.slug}`} className="inline-block text-sm text-[var(--color-accent)] hover:underline">{t("capture.view_node", locale)}</Link>
+          <Link to={`/node?id=${result.slug}`} className="inline-flex items-center gap-1 text-sm text-[var(--color-accent)] hover:underline">
+            {t("capture.view_node", locale)} <ArrowRight className="h-3 w-3" />
+          </Link>
         </div>
       )}
 
@@ -76,30 +85,35 @@ export default function Capture() {
         <form onSubmit={submit} className="space-y-5">
           <div className="space-y-1.5">
             <label htmlFor="capture-text" className="text-sm font-medium">{t("capture.text_label", locale)}</label>
-            <textarea id="capture-text" value={text} onChange={(e) => setText(e.target.value)} rows={6}
-              className="w-full rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2 text-sm outline-none transition-colors focus:border-[var(--color-accent)] resize-y"
+            <textarea id="capture-text" value={text} onChange={(e) => setText(e.target.value)} rows={6} disabled={loading}
+              className="w-full rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2 text-sm outline-none transition-colors focus:border-[var(--color-accent)] resize-y disabled:opacity-50"
               placeholder={t("capture.text_placeholder", locale)} />
-            <p className={`text-xs ${valid ? "text-[var(--color-muted)]" : "text-red-500"}`}>{t("capture.char_count", locale, { count: charCount })}</p>
+            <div className="flex items-center gap-2">
+              <div className="h-1 flex-1 rounded-full bg-[var(--color-border)] overflow-hidden">
+                <div className={`h-full rounded-full transition-all ${valid ? "bg-[var(--color-accent)]" : "bg-[var(--color-muted)]"}`} style={{ width: `${progress * 100}%` }} />
+              </div>
+              <span className={`text-xs tabular-nums ${valid ? "text-[var(--color-muted)]" : "text-red-500"}`}>{charCount}/50</span>
+            </div>
           </div>
 
           <div className="space-y-1.5">
             <label htmlFor="capture-url" className="text-sm font-medium">{t("capture.url_label", locale)}</label>
-            <input id="capture-url" type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..."
-              className="w-full rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2 text-sm outline-none transition-colors focus:border-[var(--color-accent)]" />
+            <input id="capture-url" type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." disabled={loading}
+              className="w-full rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2 text-sm outline-none transition-colors focus:border-[var(--color-accent)] disabled:opacity-50" />
           </div>
 
           <div className="flex flex-wrap gap-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium">{t("capture.type_label", locale)}</label>
-              <select value={type} onChange={(e) => setType(e.target.value)}
-                className="rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2 text-sm outline-none">
+              <select value={type} onChange={(e) => setType(e.target.value)} disabled={loading}
+                className="rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2 text-sm outline-none disabled:opacity-50">
                 {TYPES.map((tp) => <option key={tp} value={tp}>{t(`type.${tp}` as Parameters<typeof t>[0], locale)}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium">{t("capture.lang_label", locale)}</label>
-              <select value={lang} onChange={(e) => setLang(e.target.value as "es" | "en")}
-                className="rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2 text-sm outline-none">
+              <select value={lang} onChange={(e) => setLang(e.target.value as "es" | "en")} disabled={loading}
+                className="rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2 text-sm outline-none disabled:opacity-50">
                 <option value="es">ES</option>
                 <option value="en">EN</option>
               </select>
@@ -108,7 +122,7 @@ export default function Capture() {
 
           <button type="submit" disabled={!valid || loading}
             className="inline-flex items-center gap-2 rounded-lg bg-[var(--color-fg)] px-4 py-2 text-sm font-medium text-[var(--color-bg)] transition-opacity hover:opacity-80 disabled:opacity-50">
-            <Send className="h-4 w-4" />
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             {loading ? t("capture.submitting", locale) : t("capture.submit", locale)}
           </button>
         </form>

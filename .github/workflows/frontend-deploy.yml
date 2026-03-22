@@ -34,8 +34,9 @@ jobs:
           echo "api_url=$(aws ssm get-parameter --name /${{ env.PROJECT }}/dev/api/url --query Parameter.Value --output text)" >> "$GITHUB_OUTPUT"
           echo "bucket=$(aws ssm get-parameter --name /${{ env.PROJECT }}/dev/frontend/bucket --query Parameter.Value --output text)" >> "$GITHUB_OUTPUT"
           echo "distribution_id=$(aws ssm get-parameter --name /${{ env.PROJECT }}/dev/frontend/cloudfront-distribution-id --query Parameter.Value --output text)" >> "$GITHUB_OUTPUT"
-          echo "cognito_domain=$(aws ssm get-parameter --name /${{ env.PROJECT }}/dev/cognito/domain --query Parameter.Value --output text 2>/dev/null || echo '')" >> "$GITHUB_OUTPUT"
-          echo "cognito_client_id=$(aws ssm get-parameter --name /${{ env.PROJECT }}/dev/cognito/spa-client-id --query Parameter.Value --output text 2>/dev/null || echo '')" >> "$GITHUB_OUTPUT"
+          echo "cognito_domain=$(aws ssm get-parameter --name /${{ env.PROJECT }}/dev/cognito/domain --query Parameter.Value --output text)" >> "$GITHUB_OUTPUT"
+          echo "cognito_client_id=$(aws ssm get-parameter --name /${{ env.PROJECT }}/dev/cognito/spa-client-id --query Parameter.Value --output text)" >> "$GITHUB_OUTPUT"
+          echo "cognito_user_pool_id=$(aws ssm get-parameter --name /${{ env.PROJECT }}/dev/cognito/user-pool-id --query Parameter.Value --output text)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v4
         with:
@@ -51,6 +52,7 @@ jobs:
           VITE_API_URL: ${{ steps.ssm.outputs.api_url }}
           VITE_COGNITO_DOMAIN: ${{ steps.ssm.outputs.cognito_domain }}
           VITE_COGNITO_CLIENT_ID: ${{ steps.ssm.outputs.cognito_client_id }}
+          VITE_COGNITO_USER_POOL_ID: ${{ steps.ssm.outputs.cognito_user_pool_id }}
         run: npm run build
 
       - name: Deploy to S3
@@ -83,8 +85,9 @@ jobs:
           echo "api_url=$(aws ssm get-parameter --name /${{ env.PROJECT }}/prod/api/url --query Parameter.Value --output text)" >> "$GITHUB_OUTPUT"
           echo "bucket=$(aws ssm get-parameter --name /${{ env.PROJECT }}/prod/frontend/bucket --query Parameter.Value --output text)" >> "$GITHUB_OUTPUT"
           echo "distribution_id=$(aws ssm get-parameter --name /${{ env.PROJECT }}/prod/frontend/cloudfront-distribution-id --query Parameter.Value --output text)" >> "$GITHUB_OUTPUT"
-          echo "cognito_domain=$(aws ssm get-parameter --name /${{ env.PROJECT }}/prod/cognito/domain --query Parameter.Value --output text 2>/dev/null || echo '')" >> "$GITHUB_OUTPUT"
-          echo "cognito_client_id=$(aws ssm get-parameter --name /${{ env.PROJECT }}/prod/cognito/spa-client-id --query Parameter.Value --output text 2>/dev/null || echo '')" >> "$GITHUB_OUTPUT"
+          echo "cognito_domain=$(aws ssm get-parameter --name /${{ env.PROJECT }}/prod/cognito/domain --query Parameter.Value --output text)" >> "$GITHUB_OUTPUT"
+          echo "cognito_client_id=$(aws ssm get-parameter --name /${{ env.PROJECT }}/prod/cognito/spa-client-id --query Parameter.Value --output text)" >> "$GITHUB_OUTPUT"
+          echo "cognito_user_pool_id=$(aws ssm get-parameter --name /${{ env.PROJECT }}/prod/cognito/user-pool-id --query Parameter.Value --output text)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v4
         with:
@@ -100,6 +103,7 @@ jobs:
           VITE_API_URL: ${{ steps.ssm.outputs.api_url }}
           VITE_COGNITO_DOMAIN: ${{ steps.ssm.outputs.cognito_domain }}
           VITE_COGNITO_CLIENT_ID: ${{ steps.ssm.outputs.cognito_client_id }}
+          VITE_COGNITO_USER_POOL_ID: ${{ steps.ssm.outputs.cognito_user_pool_id }}
         run: npm run build
 
       - name: Deploy to S3
