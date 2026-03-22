@@ -132,6 +132,8 @@ const dict = {
   "capture.login_required": { es: "Inicia sesi\u00f3n para capturar conocimiento.", en: "Log in to capture knowledge." },
   "capture.text_label": { es: "Texto", en: "Text" },
   "capture.text_placeholder": { es: "Pega o escribe el contenido a capturar (m\u00ednimo 50 caracteres)\u2026", en: "Paste or type content to capture (minimum 50 characters)\u2026" },
+  "capture.chat_placeholder": { es: "Pega o escribe contenido\u2026 (Cmd+Enter para enviar)", en: "Paste or type content\u2026 (Cmd+Enter to send)" },
+  "capture.empty": { es: "Escribe o pega contenido para capturar conocimiento", en: "Type or paste content to capture knowledge" },
   "capture.char_count": { es: "{count} caracteres (m\u00ednimo 50)", en: "{count} characters (minimum 50)" },
   "capture.url_label": { es: "URL de origen", en: "Source URL" },
   "capture.optional": { es: "opcional", en: "optional" },
