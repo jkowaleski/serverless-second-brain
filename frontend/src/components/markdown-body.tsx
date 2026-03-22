@@ -65,6 +65,13 @@ function YouTubeEmbed({ url }: { url: string }) {
   );
 }
 
+// Preprocess MDX components into markdown
+const MDX_YT = /<YouTube\s+id="([\w-]+)"\s*\/>/g;
+
+function preprocess(md: string): string {
+  return md.replace(MDX_YT, (_, id) => `[YouTube](https://www.youtube.com/watch?v=${id})`);
+}
+
 export function MarkdownBody({ content }: { content: string }) {
   return (
     <div className="prose dark:prose-invert max-w-none">
@@ -87,13 +94,11 @@ export function MarkdownBody({ content }: { content: string }) {
             return <a href={href}>{children}</a>;
           },
           p({ children, node }) {
-            // Unwrap <p> that only contains an image or video embed (avoid invalid nesting)
             const child = Array.isArray(children) && children.length === 1 ? children[0] : children;
             if (child && typeof child === "object" && "type" in child) {
               const t = (child as any).type;
               if (t === "img" || t === YouTubeEmbed) return <>{children}</>;
             }
-            // Check if any child rendered as a block element (figure, div)
             if (node?.children?.length === 1 && node.children[0].type === "element") {
               const tag = (node.children[0] as any).tagName;
               if (tag === "img") return <>{children}</>;
@@ -102,7 +107,7 @@ export function MarkdownBody({ content }: { content: string }) {
           },
         }}
       >
-        {content}
+        {preprocess(content)}
       </ReactMarkdown>
     </div>
   );
