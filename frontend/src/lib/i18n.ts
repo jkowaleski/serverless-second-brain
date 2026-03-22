@@ -87,7 +87,7 @@ const dict = {
   "node.enriching": { es: "Generando contenido…", en: "Generating content…" },
 
   // Node chat
-  "node_chat.open": { es: "💬 Editar con chat", en: "💬 Edit with chat" },
+  "node_chat.open": { es: "Editar con chat", en: "Edit with chat" },
   "node_chat.title": { es: "Editor", en: "Editor" },
   "node_chat.placeholder": { es: "Reescribe la intro, agrega una sección sobre X, hazlo público...", en: "Rewrite the intro, add a section about X, make it public..." },
   "node_chat.q.rewrite": { es: "Reescribir", en: "Rewrite" },

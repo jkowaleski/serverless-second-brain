@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, type ReactNode } from "react";
-import { Send, Loader2, PenLine, Plus, Globe, Link2, ArrowUp, Eye, Lock, Trash2 } from "lucide-react";
+import { Send, Loader2, PenLine, Plus, Globe, Link2, ArrowUp, Eye, Lock, Trash2, MessageSquareText } from "lucide-react";
 import { api } from "@/lib/api";
 import { t, localized as loc } from "@/lib/i18n";
 import type { DictKey } from "@/lib/i18n";
@@ -29,7 +29,8 @@ export function NodeChat({ slug, node, onUpdate }: { slug: string; node?: { stat
   if (!open) {
     return (
       <button onClick={() => setOpen(true)}
-        className="w-full rounded-lg border border-dashed border-[var(--color-border)] py-3 text-sm text-[var(--color-muted)] transition-colors hover:border-[var(--color-fg)] hover:text-[var(--color-fg)] cursor-pointer">
+        className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--color-border)] py-3 text-sm text-[var(--color-muted)] transition-colors hover:border-[var(--color-fg)] hover:text-[var(--color-fg)] cursor-pointer">
+        <MessageSquareText className="h-4 w-4" />
         {t("node_chat.open", locale)}
       </button>
     );
