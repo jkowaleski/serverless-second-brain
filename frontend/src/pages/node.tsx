@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { api } from "@/lib/api";
 import type { NodeResponse } from "@/lib/types";
 import { ContentMeta } from "@/components/badges";
+import { MarkdownBody } from "@/components/markdown-body";
 import { TYPE_COLORS } from "@/lib/constants";
 import { t, localized, typeLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
@@ -26,14 +27,14 @@ export default function NodePage() {
     if (!slug) return;
     setData(null);
     setError("");
-    api.node(slug).then(setData).catch((e) => setError(e.message));
-  }, [slug]);
+    api.node(slug, { include_body: true, language: locale }).then(setData).catch((e) => setError(e.message));
+  }, [slug, locale]);
 
   if (!slug) return <p className="py-12 text-center text-[var(--color-muted)]">{t("node.empty", locale)}</p>;
   if (error) return <p className="py-12 text-center text-red-500">{t("common.error", locale, { msg: error })}</p>;
   if (!data) return <p className="py-12 text-center text-[var(--color-muted)]">{t("common.loading", locale)}</p>;
 
-  const { node, edges, related } = data;
+  const { node, edges, related, body } = data;
   const section = TYPE_TO_SECTION[node.node_type] ?? "concepts";
 
   return (
@@ -53,17 +54,22 @@ export default function NodePage() {
         <ContentMeta type={node.node_type} status={node.status} tags={node.tags} />
       </header>
 
-      {/* Bilingual summaries */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-lg border border-[var(--color-border)] p-4 space-y-2">
-          <h2 className="text-xs font-medium text-[var(--color-muted)] uppercase tracking-wider">{t("node.summary_es", locale)}</h2>
-          <p className="text-sm leading-relaxed">{localized(node, "summary", "es")}</p>
+      {/* Body content */}
+      {body ? (
+        <MarkdownBody content={body} />
+      ) : (
+        /* Bilingual summaries fallback when no body */
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded-lg border border-[var(--color-border)] p-4 space-y-2">
+            <h2 className="text-xs font-medium text-[var(--color-muted)] uppercase tracking-wider">{t("node.summary_es", locale)}</h2>
+            <p className="text-sm leading-relaxed">{localized(node, "summary", "es")}</p>
+          </div>
+          <div className="rounded-lg border border-[var(--color-border)] p-4 space-y-2">
+            <h2 className="text-xs font-medium text-[var(--color-muted)] uppercase tracking-wider">{t("node.summary_en", locale)}</h2>
+            <p className="text-sm leading-relaxed">{localized(node, "summary", "en")}</p>
+          </div>
         </div>
-        <div className="rounded-lg border border-[var(--color-border)] p-4 space-y-2">
-          <h2 className="text-xs font-medium text-[var(--color-muted)] uppercase tracking-wider">{t("node.summary_en", locale)}</h2>
-          <p className="text-sm leading-relaxed">{localized(node, "summary", "en")}</p>
-        </div>
-      </div>
+      )}
 
       {/* Related — matching jonmatum.com related-content.tsx */}
       {related.length > 0 && (

@@ -1,5 +1,6 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { getNode, getAllNodes, getAllEdges, getNodeEdges, getInboundEdges, batchGetNodes } from "../../shared/dynamodb.js";
+import { getBody } from "../../shared/s3.js";
 import { NotFoundError } from "../../shared/errors.js";
 import { isAuthenticated } from "../../shared/auth.js";
 import type { MetaItem, EdgeItem } from "../../shared/types.js";
@@ -78,10 +79,13 @@ async function handleGraph(event: APIGatewayProxyEvent): Promise<APIGatewayProxy
   };
 }
 
-async function handleNode(slug: string, authed: boolean): Promise<APIGatewayProxyResult> {
+async function handleNode(slug: string, authed: boolean, event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   const node = await getNode(slug);
   if (!node) throw new NotFoundError(`Node '${slug}' not found`);
   if (!authed && node.visibility === "private") throw new NotFoundError(`Node '${slug}' not found`);
+
+  const includeBody = event.queryStringParameters?.include_body === "true";
+  const language = (event.queryStringParameters?.language === "en" ? "en" : "es") as "es" | "en";
 
   const [outbound, inbound] = await Promise.all([getNodeEdges(slug), getInboundEdges(slug)]);
 
@@ -92,6 +96,14 @@ async function handleNode(slug: string, authed: boolean): Promise<APIGatewayProx
   ];
   const relatedMeta = await batchGetNodes(relatedSlugs);
   const relatedNodes = relatedMeta.map((rn) => ({ id: rn.slug, title: rn.title, node_type: rn.node_type, status: rn.status }));
+
+  // Optionally fetch body from S3
+  let body: string | null = null;
+  if (includeBody) {
+    body = await getBody(node.node_type, slug, language);
+    // Fallback to Spanish if English not available
+    if (!body && language === "en") body = await getBody(node.node_type, slug, "es");
+  }
 
   return {
     statusCode: 200,
@@ -118,6 +130,7 @@ async function handleNode(slug: string, authed: boolean): Promise<APIGatewayProx
         weight: e.weight,
       })),
       related: relatedNodes,
+      ...(body !== null && { body }),
     }),
   };
 }
@@ -125,7 +138,7 @@ async function handleNode(slug: string, authed: boolean): Promise<APIGatewayProx
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     const nodeId = event.pathParameters?.id;
-    if (nodeId) return await handleNode(nodeId, await isAuthenticated(event));
+    if (nodeId) return await handleNode(nodeId, await isAuthenticated(event), event);
     return await handleGraph(event);
   } catch (error) {
     if (error instanceof NotFoundError) {

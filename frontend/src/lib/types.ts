@@ -75,4 +75,5 @@ export interface NodeResponse {
   node: NodeDetail;
   edges: NodeEdge[];
   related: RelatedNode[];
+  body?: string;
 }

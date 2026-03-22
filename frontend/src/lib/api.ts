@@ -25,7 +25,13 @@ export const api = {
     if (params?.status) q.set("status", params.status);
     return get<SearchResponse>(`/search?${q}`, token);
   },
-  node: (slug: string, token?: string | null) => get<NodeResponse>(`/nodes/${slug}`, token),
+  node: (slug: string, opts?: { include_body?: boolean; language?: string }, token?: string | null) => {
+    const q = new URLSearchParams();
+    if (opts?.include_body) q.set("include_body", "true");
+    if (opts?.language) q.set("language", opts.language);
+    const qs = q.toString();
+    return get<NodeResponse>(`/nodes/${slug}${qs ? `?${qs}` : ""}`, token);
+  },
   capture: async (body: { text: string; url?: string; type: string; language: string }, token: string) => {
     const res = await fetch(`${API}/capture`, {
       method: "POST",

@@ -192,3 +192,65 @@ main {
 *::-webkit-scrollbar-thumb:hover {
   background: var(--color-muted);
 }
+
+/* Prose code styling — matching jonmatum.com */
+.prose pre {
+  background: var(--color-code-bg, #f0f0f0);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+.prose code:not(pre code) {
+  background: var(--color-code-bg, #f0f0f0);
+  padding: 0.15em 0.35em;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+
+.dark .prose pre {
+  --color-code-bg: #161616;
+}
+
+.dark .prose code:not(pre code) {
+  --color-code-bg: #161616;
+}
+
+/* Shiki dual-theme support */
+.shiki,
+.shiki span {
+  color: var(--shiki-light) !important;
+  background-color: transparent !important;
+}
+
+.dark .shiki,
+.dark .shiki span {
+  color: var(--shiki-dark) !important;
+}
+
+/* Table wrapper for overflow */
+.prose .table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.prose table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 500px;
+}
+
+.prose th,
+.prose td {
+  border: 1px solid var(--color-border);
+  padding: 0.5rem 0.75rem;
+}
+
+.prose th {
+  background: var(--color-code-bg, #f0f0f0);
+}
+
+.dark .prose th {
+  --color-code-bg: #161616;
+}
