@@ -174,3 +174,97 @@ export async function embed(text: string): Promise<number[]> {
 
   return vector as number[];
 }
+
+export interface NodeContext {
+  slug: string;
+  node_type: string;
+  status: string;
+  visibility: string;
+  title: string;
+  title_es: string;
+  title_en: string;
+  summary_es: string;
+  summary_en: string;
+  tags: string[];
+  body_es: string;
+  body_en: string;
+  edges: string[];
+}
+
+export async function nodeChat(message: string, context: NodeContext, language: string): Promise<import("./types.js").NodeChatAction> {
+  const prompt = `You are a knowledge graph editor. The user wants to modify a node in their personal knowledge base.
+
+## Current node
+- Slug: ${context.slug}
+- Type: ${context.node_type}
+- Status: ${context.status}
+- Visibility: ${context.visibility}
+- Title: ${context.title}
+- Title ES: ${context.title_es}
+- Title EN: ${context.title_en}
+- Tags: ${context.tags.join(", ")}
+- Connected to: ${context.edges.join(", ") || "none"}
+
+## Current summary (ES)
+${context.summary_es}
+
+## Current summary (EN)
+${context.summary_en}
+
+## Current body (ES)
+${context.body_es}
+
+## Current body (EN)
+${context.body_en}
+
+## User instruction
+${message}
+
+## Rules
+- Respond in the user's language (${language})
+- If the user asks to update/rewrite/add content, return action "update_body" with COMPLETE new body_es and body_en (not just the changed section — return the full body)
+- If the user asks to change title, summary, or tags, return action "update_meta" with only the changed fields
+- If the user asks to connect to another node, return action "add_edge" with the target slug
+- If the user asks to change visibility, return action "set_visibility"
+- If the user asks to promote/change status, return action "set_status"
+- If the user asks to delete, return action "delete"
+- If the user asks a question or the instruction is unclear, return action "none" with a helpful message
+- message_es and message_en: brief confirmation of what you did (or will do), in both languages
+- For body content, follow these rules:
+  - Spanish: proper accents, ¿...?, «...», em dashes
+  - English: declarative headings, Oxford comma
+  - No filler phrases ("game-changer", "increasingly important")
+  - Mermaid diagrams: alphanumeric IDs only, quoted labels with special chars, accTitle + accDescr required
+
+## Response format (JSON only, no markdown wrapping)
+{
+  "action": "update_body" | "update_meta" | "add_edge" | "set_visibility" | "set_status" | "delete" | "none",
+  "body_es": "...",
+  "body_en": "...",
+  "meta": { "title": "...", "tags": [...] },
+  "edge": { "target": "slug", "edge_type": "related" },
+  "visibility": "public" | "private",
+  "status": "seed" | "growing" | "evergreen",
+  "message_es": "...",
+  "message_en": "..."
+}
+Only include fields relevant to the action. Always include message_es and message_en.`;
+
+  const responseBody = await invokeWithRetry({
+    modelId: MODEL_ID,
+    body: JSON.stringify({
+      anthropic_version: "bedrock-2023-05-31",
+      max_tokens: 8192,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  const body = JSON.parse(new TextDecoder().decode(responseBody));
+  const content = body.content?.[0]?.text;
+  if (!content) throw new BedrockError("Empty response from Bedrock");
+
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new BedrockError("No JSON in Bedrock response");
+
+  return JSON.parse(jsonMatch[0]);
+}

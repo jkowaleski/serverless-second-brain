@@ -85,6 +85,10 @@ const dict = {
   "node.words": { es: "{count} palabras", en: "{count} words" },
   "node.empty": { es: "No se especific\u00f3 un nodo.", en: "No node specified." },
 
+  // Node chat
+  "node_chat.open": { es: "💬 Editar con chat", en: "💬 Edit with chat" },
+  "node_chat.title": { es: "Editor", en: "Editor" },
+  "node_chat.placeholder": { es: "Reescribe la intro, agrega una sección sobre X, hazlo público...", en: "Rewrite the intro, add a section about X, make it public..." },
   // Dashboard
   "dashboard.title": { es: "Dashboard", en: "Dashboard" },
   "dashboard.nodes": { es: "Nodos", en: "Nodes" },

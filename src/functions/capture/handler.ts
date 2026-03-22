@@ -6,21 +6,112 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import { validateCaptureRequest, generateSlug } from "../../shared/validation.js";
-import { getNode, putNode, putEdge, putAudit, listNodeSlugs, bumpCacheVersion, updateNodeVisibility } from "../../shared/dynamodb.js";
-import { putBody } from "../../shared/s3.js";
-import { classify } from "../../shared/bedrock.js";
+import { getNode, putNode, putEdge, putAudit, listNodeSlugs, bumpCacheVersion, updateNodeVisibility, updateNodeMeta, deleteNode, getNodeEdges } from "../../shared/dynamodb.js";
+import { putBody, getBody, deleteBody } from "../../shared/s3.js";
+import { classify, nodeChat } from "../../shared/bedrock.js";
+import type { NodeContext } from "../../shared/bedrock.js";
 import { jsonResponse, errorResponse, corsHeaders } from "../../shared/http.js";
 import { auditTtl } from "../../shared/math.js";
 import { ValidationError, DuplicateError, BedrockError, NotFoundError } from "../../shared/errors.js";
-import type { MetaItem, EdgeItem, AuditItem, CaptureResponse } from "../../shared/types.js";
+import type { MetaItem, EdgeItem, AuditItem, CaptureResponse, NodeChatAction } from "../../shared/types.js";
 
 const CORS = corsHeaders("POST,PATCH,OPTIONS");
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const method = event.httpMethod;
   if (method === "PATCH") return handlePatch(event);
+  const body = JSON.parse(event.body ?? "{}");
+  if (body.action === "chat") return handleChat(event, body);
   return handleCapture(event);
 };
+
+async function handleChat(event: APIGatewayProxyEvent, body: { slug?: string; message?: string; language?: string }): Promise<APIGatewayProxyResult> {
+  try {
+    const { slug, message, language = "es" } = body;
+    if (!slug || !message) throw new ValidationError("slug and message are required");
+
+    // Load full node context
+    const node = await getNode(slug);
+    if (!node) throw new NotFoundError(`Node '${slug}' not found`);
+
+    const [bodyEs, bodyEn] = await Promise.all([
+      getBody(node.node_type, slug, "es").catch(() => ""),
+      getBody(node.node_type, slug, "en").catch(() => ""),
+    ]);
+
+    // Get edges
+    const edges = await getNodeEdges(slug);
+    const edgeSlugs = edges.map((e) => e.SK.replace("EDGE#", ""));
+
+    const context: NodeContext = {
+      slug, node_type: node.node_type, status: node.status,
+      visibility: node.visibility ?? "private",
+      title: node.title, title_es: node.title_es, title_en: node.title_en,
+      summary_es: node.summary_es, summary_en: node.summary_en,
+      tags: node.tags, body_es: bodyEs || "", body_en: bodyEn || "",
+      edges: edgeSlugs,
+    };
+
+    const result = await nodeChat(message, context, language);
+    const now = new Date().toISOString();
+
+    // Execute the action
+    if (result.action === "update_body" && result.body_es && result.body_en) {
+      await Promise.all([
+        putBody(node.node_type, slug, result.body_es, "es"),
+        putBody(node.node_type, slug, result.body_en, "en"),
+      ]);
+      const wcEs = result.body_es.split(/\s+/).filter(Boolean).length;
+      const wcEn = result.body_en.split(/\s+/).filter(Boolean).length;
+      await updateNodeMeta(slug, { word_count_es: wcEs, word_count_en: wcEn });
+    }
+
+    if (result.action === "update_meta" && result.meta) {
+      await updateNodeMeta(slug, result.meta);
+    }
+
+    if (result.action === "add_edge" && result.edge) {
+      const edgeItem: EdgeItem = {
+        PK: `NODE#${slug}`, SK: `EDGE#${result.edge.target}`,
+        edge_type: result.edge.edge_type ?? "related", weight: 1.0,
+        created_at: now, created_by: "human",
+      };
+      await putEdge(edgeItem);
+    }
+
+    if (result.action === "set_visibility" && result.visibility) {
+      await updateNodeVisibility(slug, result.visibility);
+    }
+
+    if (result.action === "set_status" && result.status) {
+      await updateNodeMeta(slug, { status: result.status, GSI2PK: `STATUS#${result.status}` });
+    }
+
+    if (result.action === "delete") {
+      await deleteNode(slug);
+      await deleteBody(node.node_type, slug).catch(() => {});
+    }
+
+    if (result.action !== "none") {
+      const audit: AuditItem = {
+        PK: `AUDIT#${now}`, SK: `NODE#${slug}`,
+        action: "update", actor: "human",
+        changes: { chat_action: result.action, message },
+        ttl: auditTtl(),
+      };
+      await putAudit(audit);
+      await bumpCacheVersion();
+    }
+
+    return { statusCode: 200, headers: CORS, body: JSON.stringify(result) };
+  } catch (error) {
+    if (error instanceof ValidationError) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "validation_error", message: error.message }) };
+    if (error instanceof NotFoundError) return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: "not_found", message: error.message }) };
+    if (error instanceof BedrockError) return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: "bedrock_unavailable", message: error.message }) };
+    console.error("Chat error:", JSON.stringify(error));
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: "internal_error", message: "Internal server error" }) };
+  }
+}
 
 async function handlePatch(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {

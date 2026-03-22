@@ -174,3 +174,52 @@ export async function updateNodeVisibility(slug: string, visibility: "public" | 
     ConditionExpression: "attribute_exists(PK)",
   }));
 }
+
+export async function updateNodeMeta(slug: string, fields: Record<string, unknown>): Promise<void> {
+  const now = new Date().toISOString();
+  const names: Record<string, string> = {};
+  const values: Record<string, unknown> = { ":now": now };
+  const parts = ["updated_at = :now"];
+
+  for (const [key, val] of Object.entries(fields)) {
+    const attr = `#${key}`;
+    const placeholder = `:${key}`;
+    names[attr] = key;
+    values[placeholder] = val;
+    parts.push(`${attr} = ${placeholder}`);
+  }
+
+  await ddb.send(new UpdateCommand({
+    TableName: TABLE_NAME,
+    Key: { PK: `NODE#${slug}`, SK: "META" },
+    UpdateExpression: `SET ${parts.join(", ")}`,
+    ExpressionAttributeNames: Object.keys(names).length ? names : undefined,
+    ExpressionAttributeValues: values,
+    ConditionExpression: "attribute_exists(PK)",
+  }));
+}
+
+export async function deleteNode(slug: string): Promise<void> {
+  // Get all items for this node (META, EDGE#*, EMBED)
+  const res = await ddb.send(new QueryCommand({
+    TableName: TABLE_NAME,
+    KeyConditionExpression: "PK = :pk",
+    ExpressionAttributeValues: { ":pk": `NODE#${slug}` },
+    ProjectionExpression: "PK, SK",
+  }));
+  if (!res.Items?.length) return;
+
+  // Delete in batches of 25
+  const items = res.Items as { PK: string; SK: string }[];
+  for (let i = 0; i < items.length; i += 25) {
+    const batch = items.slice(i, i + 25);
+    const { BatchWriteCommand } = await import("@aws-sdk/lib-dynamodb");
+    await ddb.send(new BatchWriteCommand({
+      RequestItems: {
+        [TABLE_NAME]: batch.map((item) => ({
+          DeleteRequest: { Key: { PK: item.PK, SK: item.SK } },
+        })),
+      },
+    }));
+  }
+}

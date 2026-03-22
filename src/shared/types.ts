@@ -90,3 +90,15 @@ export interface ClassificationResult {
   tags: string[];
   concepts: string[];
 }
+
+export interface NodeChatAction {
+  action: "update_body" | "update_meta" | "add_edge" | "set_visibility" | "set_status" | "delete" | "none";
+  body_es?: string;
+  body_en?: string;
+  meta?: Partial<{ title: string; title_es: string; title_en: string; summary_es: string; summary_en: string; tags: string[] }>;
+  edge?: { target: string; edge_type?: string };
+  visibility?: "public" | "private";
+  status?: "seed" | "growing" | "evergreen";
+  message_es: string;
+  message_en: string;
+}

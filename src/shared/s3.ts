@@ -34,3 +34,11 @@ export async function putBody(
     ContentType: "text/markdown; charset=utf-8",
   }));
 }
+
+export async function deleteBody(nodeType: string, slug: string): Promise<void> {
+  const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
+  const prefix = `content/${nodeType}/${slug}/`;
+  for (const suffix of ["body.mdx", "body.en.mdx"]) {
+    await s3.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: `${prefix}${suffix}` })).catch(() => {});
+  }
+}

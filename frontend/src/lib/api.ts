@@ -63,4 +63,11 @@ export const api = {
       body: JSON.stringify({ slug, visibility }),
     });
   },
+  nodeChat: async (slug: string, message: string, language: string, token: string) => {
+    return request<{ action: string; message_es: string; message_en: string; [key: string]: unknown }>(`${API}/capture`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      body: JSON.stringify({ action: "chat", slug, message, language }),
+    });
+  },
 };

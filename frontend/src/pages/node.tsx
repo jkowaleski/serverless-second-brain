@@ -6,6 +6,7 @@ import type { NodeResponse } from "@/lib/types";
 import { ContentMeta } from "@/components/badges";
 import { MarkdownBody } from "@/components/markdown-body";
 import { NodeDetailSkeleton } from "@/components/skeletons";
+import { NodeChat } from "@/components/node-chat";
 import { t, localized, typeLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
 import { useAuth } from "@/lib/auth";
@@ -27,10 +28,14 @@ export default function NodePage() {
 
   useEffect(() => {
     if (!slug || authLoading) return;
+    loadNode();
+  }, [slug, locale, token, authLoading]);
+
+  function loadNode() {
     setData(null);
     setError("");
     api.node(slug, { include_body: true, language: locale }, token).then(setData).catch((e) => setError(e.message));
-  }, [slug, locale, token, authLoading]);
+  }
 
   if (!slug) return <p className="py-12 text-center text-[var(--color-muted)]">{t("node.empty", locale)}</p>;
   if (error) return <p className="py-12 text-center text-red-500">{t("common.error", locale, { msg: error })}</p>;
@@ -95,6 +100,9 @@ export default function NodePage() {
           </ul>
         </section>
       )}
+
+      {/* Chat editor */}
+      <NodeChat slug={slug} onUpdate={loadNode} />
 
       {/* Bottom back link */}
       <Link to={`/${section}`} className="inline-flex items-center gap-1 text-sm text-[var(--color-muted)] transition-colors hover:text-[var(--color-fg)]">
