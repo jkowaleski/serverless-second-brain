@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { Menu, X, LogIn, LogOut, Sun, Moon, Network, Clock, BarChart3 } from "lucide-react";
+import { Menu, X, LogIn, LogOut, Sun, Moon, Network, Clock, BarChart3, Brain } from "lucide-react";
 import { PrefsProvider, usePrefs } from "@/lib/prefs";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { t, type DictKey } from "@/lib/i18n";
@@ -87,7 +87,8 @@ function ShellInner() {
           <div className="flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center gap-2">
-              <Link to="/" className="font-mono text-sm font-semibold" onClick={() => setOpen(false)}>
+              <Link to="/" className="flex items-center gap-1.5 font-mono text-sm font-semibold" onClick={() => setOpen(false)}>
+                <Brain className="h-4 w-4 text-[var(--color-accent)]" />
                 ssb
               </Link>
             </div>
