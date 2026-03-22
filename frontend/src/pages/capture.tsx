@@ -17,7 +17,6 @@ export default function Capture() {
   const [text, setText] = useState("");
   const [url, setUrl] = useState("");
   const [type, setType] = useState("concept");
-  const [lang, setLang] = useState<"es" | "en">(locale);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<CaptureResult | null>(null);
@@ -46,7 +45,7 @@ export default function Capture() {
     if (!valid || !token) return;
     setLoading(true); setError(""); setResult(null);
     try {
-      const res = await api.capture({ text, url: url || undefined, type, language: lang }, token);
+      const res = await api.capture({ text, url: url || undefined, type, language: locale }, token);
       setResult(res); setText(""); setUrl("");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Error";
@@ -102,8 +101,7 @@ export default function Capture() {
               className="w-full rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2 text-sm outline-none transition-colors focus:border-[var(--color-accent)] disabled:opacity-50" />
           </div>
 
-          <div className="space-y-4">
-            <fieldset className="space-y-1.5" disabled={loading}>
+          <fieldset className="space-y-1.5" disabled={loading}>
               <legend className="text-sm font-medium">{t("capture.type_label", locale)}</legend>
               <div className="flex flex-wrap gap-1.5" role="radiogroup">
                 {TYPES.map((tp) => (
@@ -114,18 +112,6 @@ export default function Capture() {
                 ))}
               </div>
             </fieldset>
-            <fieldset className="space-y-1.5" disabled={loading}>
-              <legend className="text-sm font-medium">{t("capture.lang_label", locale)}</legend>
-              <div className="flex gap-1.5" role="radiogroup">
-                {(["es", "en"] as const).map((l) => (
-                  <button key={l} type="button" role="radio" aria-checked={lang === l} onClick={() => setLang(l)}
-                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium uppercase cursor-pointer transition-colors ${lang === l ? "border-[var(--color-fg)] bg-[var(--color-fg)] text-[var(--color-bg)]" : "border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-muted)] hover:text-[var(--color-fg)]"}`}>
-                    {l}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-          </div>
 
           <button type="submit" disabled={!valid || loading}
             className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-fg)] px-4 py-2.5 text-sm font-medium text-[var(--color-bg)] cursor-pointer transition-opacity hover:opacity-80 disabled:opacity-50 disabled:cursor-default sm:w-auto">
