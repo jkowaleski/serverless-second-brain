@@ -1,13 +1,30 @@
 import type { GraphResponse, SearchResponse, NodeResponse } from "./types";
 
 const API = import.meta.env.VITE_API_URL ?? "";
+const MAX_RETRIES = 2;
+const RETRY_DELAY = 500;
 
-async function get<T>(path: string, token?: string | null): Promise<T> {
+async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  let lastError: Error | undefined;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetch(url, init);
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      return res.json() as Promise<T>;
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      // Only retry on network errors (Failed to fetch), not HTTP errors
+      if (lastError.message.match(/^[0-9]{3}\s/)) throw lastError;
+      if (attempt < MAX_RETRIES) await new Promise(r => setTimeout(r, RETRY_DELAY * (attempt + 1)));
+    }
+  }
+  throw lastError!;
+}
+
+function get<T>(path: string, token?: string | null): Promise<T> {
   const headers: Record<string, string> = {};
   if (token) headers["Authorization"] = `Bearer ${token}`;
-  const res = await fetch(`${API}${path}`, { headers });
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-  return res.json() as Promise<T>;
+  return request<T>(`${API}${path}`, { headers });
 }
 
 export const api = {
@@ -33,12 +50,10 @@ export const api = {
     return get<NodeResponse>(`/nodes/${slug}${qs ? `?${qs}` : ""}`, token);
   },
   capture: async (body: { text: string; url?: string; type: string; visibility?: string; language: string }, token: string) => {
-    const res = await fetch(`${API}/capture`, {
+    return request(`${API}/capture`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
       body: JSON.stringify(body),
     });
-    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-    return res.json();
   },
 };

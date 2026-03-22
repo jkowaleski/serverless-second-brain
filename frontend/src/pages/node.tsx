@@ -19,18 +19,18 @@ const TYPE_TO_SECTION: Record<string, string> = {
 
 export default function NodePage() {
   const { locale } = usePrefs();
-  const { token } = useAuth();
+  const { token, loading: authLoading } = useAuth();
   const [params] = useSearchParams();
   const slug = params.get("id") ?? "";
   const [data, setData] = useState<NodeResponse | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!slug) return;
+    if (!slug || authLoading) return;
     setData(null);
     setError("");
     api.node(slug, { include_body: true, language: locale }, token).then(setData).catch((e) => setError(e.message));
-  }, [slug, locale, token]);
+  }, [slug, locale, token, authLoading]);
 
   if (!slug) return <p className="py-12 text-center text-[var(--color-muted)]">{t("node.empty", locale)}</p>;
   if (error) return <p className="py-12 text-center text-red-500">{t("common.error", locale, { msg: error })}</p>;

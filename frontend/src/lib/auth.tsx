@@ -20,10 +20,14 @@ function decodeJwt(token: string): Record<string, unknown> {
   return JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
 }
 
+function isExpired(accessToken: string): boolean {
+  try {
+    const claims = decodeJwt(accessToken);
+    return (claims.exp as number) * 1000 <= Date.now();
+  } catch { return true; }
+}
+
 function userPoolId(): string {
-  // Extract from COGNITO_DOMAIN: https://{prefix}.auth.{region}.amazoncognito.com
-  // The User Pool ID is stored separately — we derive it from the id_token after first login
-  // For InitiateAuth we need it. Let's get it from env or the domain prefix.
   return import.meta.env.VITE_COGNITO_USER_POOL_ID ?? "";
 }
 
@@ -40,8 +44,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [showLogin, setShowLogin] = useState(false);
   const refreshTokenRef = useRef<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const refreshingRef = useRef<Promise<boolean> | null>(null);
+
+  const clearSession = useCallback(() => {
+    setUser(null);
+    setToken(null);
+    refreshTokenRef.current = null;
+    localStorage.removeItem("ssb-refresh");
+    clearTimeout(timerRef.current);
+  }, []);
 
   const applyToken = useCallback((accessToken: string, refreshToken?: string) => {
+    if (isExpired(accessToken)) return;
     setToken(accessToken);
     if (refreshToken) {
       refreshTokenRef.current = refreshToken;
@@ -54,55 +68,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshAuth = useCallback(async (rt: string): Promise<boolean> => {
-    const poolId = userPoolId();
-    if (!poolId || !CLIENT_ID) return false;
-    try {
-      const res = await fetch(COGNITO_IDP, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-amz-json-1.1", "X-Amz-Target": "AWSCognitoIdentityProviderService.InitiateAuth" },
-        body: JSON.stringify({
-          AuthFlow: "REFRESH_TOKEN_AUTH",
-          ClientId: CLIENT_ID,
-          AuthParameters: { REFRESH_TOKEN: rt },
-        }),
-      });
-      if (!res.ok) return false;
-      const data = await res.json();
-      const result = data.AuthenticationResult;
-      if (result?.AccessToken) {
-        applyToken(result.AccessToken);
-        return true;
+    // Deduplicate concurrent refresh calls
+    if (refreshingRef.current) return refreshingRef.current;
+
+    const doRefresh = async (): Promise<boolean> => {
+      const poolId = userPoolId();
+      if (!poolId || !CLIENT_ID) return false;
+      try {
+        const res = await fetch(COGNITO_IDP, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-amz-json-1.1", "X-Amz-Target": "AWSCognitoIdentityProviderService.InitiateAuth" },
+          body: JSON.stringify({
+            AuthFlow: "REFRESH_TOKEN_AUTH",
+            ClientId: CLIENT_ID,
+            AuthParameters: { REFRESH_TOKEN: rt },
+          }),
+        });
+        if (!res.ok) {
+          // Refresh token revoked or expired — clear session
+          clearSession();
+          return false;
+        }
+        const data = await res.json();
+        const result = data.AuthenticationResult;
+        if (result?.AccessToken) {
+          applyToken(result.AccessToken);
+          return true;
+        }
+      } catch {
+        // Network error — don't clear session, token might still be valid
       }
-    } catch { /* ignore */ }
-    return false;
-  }, [applyToken]);
+      return false;
+    };
+
+    refreshingRef.current = doRefresh().finally(() => { refreshingRef.current = null; });
+    return refreshingRef.current;
+  }, [applyToken, clearSession]);
 
   const scheduleRefresh = useCallback((accessToken: string) => {
     clearTimeout(timerRef.current);
     try {
       const claims = decodeJwt(accessToken);
+      // Refresh 60s before expiry
       const ms = (claims.exp as number) * 1000 - Date.now() - 60_000;
       if (ms > 0 && refreshTokenRef.current) {
         const rt = refreshTokenRef.current;
         timerRef.current = setTimeout(async () => {
           const ok = await refreshAuth(rt);
-          if (!ok) { setUser(null); setToken(null); localStorage.removeItem("ssb-refresh"); }
+          if (!ok) clearSession();
         }, ms);
       }
     } catch { /* ignore */ }
-  }, [refreshAuth]);
+  }, [refreshAuth, clearSession]);
 
   // Restore session from stored refresh token
   useEffect(() => {
     const rt = localStorage.getItem("ssb-refresh");
     if (rt && CLIENT_ID && userPoolId()) {
       refreshTokenRef.current = rt;
-      refreshAuth(rt).then((ok) => {
-        if (ok && refreshTokenRef.current) {
-          // Token was applied in refreshAuth → schedule next refresh
-          // We need the access token — get it from state after next render
-        }
-      }).finally(() => setLoading(false));
+      refreshAuth(rt).finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
@@ -128,17 +152,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        const msg = data.message ?? data.__type ?? "Login failed";
-        return msg;
-      }
+      if (!res.ok) return data.message ?? data.__type ?? "Login failed";
       const result = data.AuthenticationResult;
       if (result?.AccessToken) {
         applyToken(result.AccessToken, result.RefreshToken);
         setShowLogin(false);
-        return null; // success
+        return null;
       }
-      // Challenge (e.g. NEW_PASSWORD_REQUIRED)
       if (data.ChallengeName) return `Challenge: ${data.ChallengeName}`;
       return "Unexpected response";
     } catch (err) {
@@ -146,14 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [applyToken]);
 
-  const logout = useCallback(() => {
-    setUser(null); setToken(null);
-    refreshTokenRef.current = null;
-    localStorage.removeItem("ssb-refresh");
-    clearTimeout(timerRef.current);
-  }, []);
-
-  return <Ctx.Provider value={{ user, token, loading, login, logout, showLogin, setShowLogin }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ user, token, loading, login, logout: clearSession, showLogin, setShowLogin }}>{children}</Ctx.Provider>;
 }
 
 export function useAuth() { return useContext(Ctx); }
