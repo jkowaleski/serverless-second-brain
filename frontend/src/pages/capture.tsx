@@ -66,9 +66,9 @@ export default function Capture() {
 
   if (!nodeType) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col items-center justify-center space-y-6">
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center space-y-6 px-4">
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-semibold">{t("capture.title", locale)}</h1>
+          <h1 className="text-xl font-semibold sm:text-2xl">{t("capture.title", locale)}</h1>
           <p className="text-sm text-[var(--color-muted)]">{t("capture.type_question", locale)}</p>
         </div>
         <div className="flex flex-wrap justify-center gap-2">
@@ -119,19 +119,16 @@ export default function Capture() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Header — fixed */}
-      <div className="flex shrink-0 items-center justify-between pb-4">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-semibold">{t("capture.title", locale)}</h1>
-          <button onClick={() => setNodeType(null)}
-            className="rounded-full border border-[var(--color-border)] px-2.5 py-0.5 text-xs font-medium cursor-pointer transition-colors hover:border-[var(--color-muted)]">
-            {t(`type.${nodeType}` as Parameters<typeof t>[0], locale)} ✕
-          </button>
-        </div>
-        <span className="truncate text-xs text-[var(--color-muted)]">{user.email}</span>
+      <div className="flex shrink-0 items-center gap-2 pb-3">
+        <h1 className="text-lg font-semibold sm:text-2xl">{t("capture.title", locale)}</h1>
+        <button onClick={() => setNodeType(null)}
+          className="rounded-full border border-[var(--color-border)] px-2.5 py-0.5 text-xs font-medium cursor-pointer transition-colors hover:border-[var(--color-muted)]">
+          {t(`type.${nodeType}` as Parameters<typeof t>[0], locale)} ✕
+        </button>
       </div>
 
       {/* Messages — scrollable */}
-      <div className="relative min-h-0 flex-1 overflow-y-auto space-y-4 rounded-lg border border-[var(--color-border)] p-4">
+      <div className="relative min-h-0 flex-1 overflow-y-auto space-y-3 rounded-lg border border-[var(--color-border)] p-3 sm:space-y-4 sm:p-4">
         {messages.length === 0 && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-[var(--color-muted)]">
             {(() => { const Icon = TYPE_ICON[nodeType!] ?? Brain; return <Icon className="h-10 w-10 opacity-30" />; })()}
@@ -143,7 +140,7 @@ export default function Capture() {
           <div key={msg.id} className="space-y-2">
             {/* User bubble */}
             <div className="flex justify-end">
-              <div className="max-w-[85%] rounded-lg bg-[var(--color-fg)] px-3 py-2 text-sm text-[var(--color-bg)]">
+              <div className="max-w-[90%] rounded-lg bg-[var(--color-fg)] px-3 py-2 text-sm text-[var(--color-bg)] sm:max-w-[85%]">
                 <p className="whitespace-pre-wrap">{msg.text}</p>
               </div>
             </div>
@@ -158,7 +155,7 @@ export default function Capture() {
 
             {/* Result */}
             {msg.result && (
-              <div className="max-w-[85%] space-y-3">
+              <div className="max-w-full space-y-3 sm:max-w-[85%]">
                 <div className="rounded-lg border border-[var(--color-border)] p-3 space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium text-sm">{localized(msg.result, "title", locale) || msg.result.title}</span>
@@ -205,7 +202,7 @@ export default function Capture() {
       </div>
 
       {/* Input — fixed at bottom */}
-      <div className="shrink-0 border-t border-[var(--color-border)] pt-3">
+      <div className="shrink-0 border-t border-[var(--color-border)] pt-2 sm:pt-3">
         <div className="flex items-stretch gap-2">
           <textarea
             value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onKeyDown} rows={2}
