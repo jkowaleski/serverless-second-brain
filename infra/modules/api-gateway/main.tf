@@ -371,6 +371,147 @@ resource "aws_api_gateway_integration_response" "capture_options_200" {
   depends_on = [aws_api_gateway_integration.capture_options]
 }
 
+# ─── CORS (OPTIONS) for /search ───
+
+resource "aws_api_gateway_method" "search_options" {
+  count         = var.enable_search ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  resource_id   = aws_api_gateway_resource.search[0].id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "search_options" {
+  count       = var.enable_search ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.search[0].id
+  http_method = aws_api_gateway_method.search_options[0].http_method
+  type        = "MOCK"
+  request_templates = { "application/json" = jsonencode({ statusCode = 200 }) }
+}
+
+resource "aws_api_gateway_method_response" "search_options_200" {
+  count       = var.enable_search ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.search[0].id
+  http_method = aws_api_gateway_method.search_options[0].http_method
+  status_code = "200"
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+  response_models = { "application/json" = "Empty" }
+}
+
+resource "aws_api_gateway_integration_response" "search_options_200" {
+  count       = var.enable_search ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.search[0].id
+  http_method = aws_api_gateway_method.search_options[0].http_method
+  status_code = aws_api_gateway_method_response.search_options_200[0].status_code
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'${var.cors_allow_origin}'"
+  }
+  depends_on = [aws_api_gateway_integration.search_options]
+}
+
+# ─── CORS (OPTIONS) for /graph ───
+
+resource "aws_api_gateway_method" "graph_options" {
+  count         = var.enable_graph ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  resource_id   = aws_api_gateway_resource.graph[0].id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "graph_options" {
+  count       = var.enable_graph ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.graph[0].id
+  http_method = aws_api_gateway_method.graph_options[0].http_method
+  type        = "MOCK"
+  request_templates = { "application/json" = jsonencode({ statusCode = 200 }) }
+}
+
+resource "aws_api_gateway_method_response" "graph_options_200" {
+  count       = var.enable_graph ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.graph[0].id
+  http_method = aws_api_gateway_method.graph_options[0].http_method
+  status_code = "200"
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+  response_models = { "application/json" = "Empty" }
+}
+
+resource "aws_api_gateway_integration_response" "graph_options_200" {
+  count       = var.enable_graph ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.graph[0].id
+  http_method = aws_api_gateway_method.graph_options[0].http_method
+  status_code = aws_api_gateway_method_response.graph_options_200[0].status_code
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'${var.cors_allow_origin}'"
+  }
+  depends_on = [aws_api_gateway_integration.graph_options]
+}
+
+# ─── CORS (OPTIONS) for /nodes/{id} ───
+
+resource "aws_api_gateway_method" "nodes_id_options" {
+  count         = var.enable_graph ? 1 : 0
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  resource_id   = aws_api_gateway_resource.nodes_id[0].id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "nodes_id_options" {
+  count       = var.enable_graph ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.nodes_id[0].id
+  http_method = aws_api_gateway_method.nodes_id_options[0].http_method
+  type        = "MOCK"
+  request_templates = { "application/json" = jsonencode({ statusCode = 200 }) }
+}
+
+resource "aws_api_gateway_method_response" "nodes_id_options_200" {
+  count       = var.enable_graph ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.nodes_id[0].id
+  http_method = aws_api_gateway_method.nodes_id_options[0].http_method
+  status_code = "200"
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+  response_models = { "application/json" = "Empty" }
+}
+
+resource "aws_api_gateway_integration_response" "nodes_id_options_200" {
+  count       = var.enable_graph ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.nodes_id[0].id
+  http_method = aws_api_gateway_method.nodes_id_options[0].http_method
+  status_code = aws_api_gateway_method_response.nodes_id_options_200[0].status_code
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'${var.cors_allow_origin}'"
+  }
+  depends_on = [aws_api_gateway_integration.nodes_id_options]
+}
+
 # ─── CORS (OPTIONS) for /health ───
 
 resource "aws_api_gateway_method" "health_options" {
@@ -475,8 +616,11 @@ resource "aws_api_gateway_deployment" "this" {
     aws_api_gateway_integration.capture_options,
     aws_api_gateway_integration.health_options,
     aws_api_gateway_integration.search_lambda,
+    aws_api_gateway_integration.search_options,
     aws_api_gateway_integration.graph_lambda,
+    aws_api_gateway_integration.graph_options,
     aws_api_gateway_integration.nodes_id_lambda,
+    aws_api_gateway_integration.nodes_id_options,
   ]
 }
 
