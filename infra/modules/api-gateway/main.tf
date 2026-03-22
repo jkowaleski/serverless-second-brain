@@ -600,9 +600,13 @@ resource "aws_api_gateway_deployment" "this" {
       aws_api_gateway_method.capture_post.api_key_required,
       aws_api_gateway_integration.health_mock.id,
       aws_api_gateway_integration.capture_lambda.id,
+      aws_api_gateway_integration.capture_options.id,
+      aws_api_gateway_integration.health_options.id,
       var.search_lambda_invoke_arn,
       var.graph_lambda_invoke_arn,
       var.authorizer_lambda_invoke_arn,
+      var.enable_search,
+      var.enable_graph,
     ]))
   }
 
