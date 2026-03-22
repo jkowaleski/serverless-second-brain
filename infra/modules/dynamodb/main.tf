@@ -38,16 +38,28 @@ resource "aws_dynamodb_table" "this" {
   # GSI1 — Inverted index (SK → PK) for reverse edge queries and audit trail
   global_secondary_index {
     name            = "GSI1"
-    hash_key        = "SK"
-    range_key       = "PK"
+    key_schema {
+      attribute_name = "SK"
+      key_type       = "HASH"
+    }
+    key_schema {
+      attribute_name = "PK"
+      key_type       = "RANGE"
+    }
     projection_type = "ALL"
   }
 
   # GSI2 — Status index for queries like "all seeds not updated in 7 days"
   global_secondary_index {
     name               = "GSI2"
-    hash_key           = "GSI2PK"
-    range_key          = "updated_at"
+    key_schema {
+      attribute_name = "GSI2PK"
+      key_type       = "HASH"
+    }
+    key_schema {
+      attribute_name = "updated_at"
+      key_type       = "RANGE"
+    }
     projection_type    = "INCLUDE"
     non_key_attributes = ["node_type", "title", "slug"]
   }
