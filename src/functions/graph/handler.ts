@@ -40,6 +40,7 @@ function formatNode(n: MetaItem) {
     node_type: n.node_type,
     status: n.status,
     tags: n.tags,
+    updated_at: n.updated_at,
   };
 }
 

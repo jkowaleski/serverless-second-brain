@@ -9,6 +9,7 @@ export interface GraphNode {
   status: "seed" | "growing" | "evergreen";
   tags: string[];
   edge_count: number;
+  updated_at?: string;
 }
 
 export interface GraphEdge {

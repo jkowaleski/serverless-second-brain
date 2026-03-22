@@ -102,8 +102,9 @@ const dict = {
   "listing.empty": { es: "No hay nodos con estos filtros.", en: "No nodes match these filters." },
 
   // Timeline
-  "timeline.title": { es: "Cronolog\u00eda", en: "Timeline" },
+  "timeline.title": { es: "Línea de tiempo", en: "Timeline" },
   "timeline.count": { es: "{count} nodos", en: "{count} nodes" },
+  "timeline.description": { es: "{count} elementos, ordenados por última actualización", en: "{count} items, sorted by last update" },
 
   // Preferences
   "prefs.theme": { es: "Tema", en: "Theme" },
