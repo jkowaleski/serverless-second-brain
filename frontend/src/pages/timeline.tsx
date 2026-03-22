@@ -7,6 +7,7 @@ import { CardListSkeleton } from "@/components/skeletons";
 import { Filters } from "@/components/filters";
 import { t, localized, typeLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
+import { useAuth } from "@/lib/auth";
 
 type DayGroup = { key: string; label: string; counts: Record<string, number>; items: GraphNode[] };
 type MonthGroup = { key: string; label: string; counts: Record<string, number>; days: DayGroup[] };
@@ -56,15 +57,17 @@ function CountPills({ counts, locale }: { counts: Record<string, number>; locale
 
 export default function Timeline() {
   const { locale } = usePrefs();
+  const { token, loading: authLoading } = useAuth();
   const [nodes, setNodes] = useState<GraphNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [type, setType] = useState("");
   const [open, setOpen] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    if (authLoading) return;
     setLoading(true);
-    api.graph().then((d) => { setNodes(d.nodes); setLoading(false); }).catch(() => setLoading(false));
-  }, []);
+    api.graph(undefined, token).then((d) => { setNodes(d.nodes); setLoading(false); }).catch(() => setLoading(false));
+  }, [token, authLoading]);
 
   const filtered = useMemo(() => {
     let list = nodes.filter((n) => n.updated_at);

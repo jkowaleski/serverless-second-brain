@@ -5,16 +5,19 @@ import { ForceGraph } from "@/components/force-graph";
 import { Filters } from "@/components/filters";
 import { t } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
+import { useAuth } from "@/lib/auth";
 
 export default function Graph() {
   const { locale } = usePrefs();
+  const { token, loading: authLoading } = useAuth();
   const [data, setData] = useState<GraphResponse | null>(null);
   const [type, setType] = useState("");
   const [status, setStatus] = useState("");
 
   useEffect(() => {
-    api.graph({ type: type || undefined, status: status || undefined }).then(setData).catch(() => {});
-  }, [type, status]);
+    if (authLoading) return;
+    api.graph({ type: type || undefined, status: status || undefined }, token).then(setData).catch(() => {});
+  }, [type, status, token, authLoading]);
 
   return (
     <div className="space-y-6">

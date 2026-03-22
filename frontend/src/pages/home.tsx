@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import type { GraphResponse } from "@/lib/types";
 import { t, type DictKey } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
+import { useAuth } from "@/lib/auth";
 
 const sections: { href: string; titleKey: DictKey; descKey: DictKey; icon: React.ReactNode; type: string }[] = [
   { href: "/concepts", titleKey: "home.concepts", descKey: "home.concepts.desc", icon: <Brain className="h-4 w-4" />, type: "concept" },
@@ -23,15 +24,17 @@ const quickLinks: { href: string; key: DictKey; icon: React.ReactNode }[] = [
 
 export default function Home() {
   const { locale } = usePrefs();
+  const { token, loading: authLoading } = useAuth();
   const [counts, setCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    api.graph().then((d: GraphResponse) => {
+    if (authLoading) return;
+    api.graph(undefined, token).then((d: GraphResponse) => {
       const c: Record<string, number> = {};
       for (const n of d.nodes) c[n.node_type] = (c[n.node_type] ?? 0) + 1;
       setCounts(c);
     }).catch(() => {});
-  }, []);
+  }, [token, authLoading]);
 
   return (
     <div className="space-y-16">

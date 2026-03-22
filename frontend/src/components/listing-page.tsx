@@ -7,23 +7,26 @@ import { CardListSkeleton } from "@/components/skeletons";
 import { StatusIcon } from "@/components/badges";
 import { t, localized, typeLabel, statusLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
+import { useAuth } from "@/lib/auth";
 
 const STATUSES = ["seed", "growing", "evergreen"];
 
 export function ListingPage({ nodeType }: { nodeType: string }) {
   const { locale } = usePrefs();
+  const { token, loading: authLoading } = useAuth();
   const [nodes, setNodes] = useState<GraphNode[]>([]);
   const [status, setStatus] = useState("");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) return;
     setLoading(true);
-    api.graph({ type: nodeType }).then((d) => {
+    api.graph({ type: nodeType }, token).then((d) => {
       setNodes(d.nodes);
       setLoading(false);
     }).catch(() => setLoading(false));
-  }, [nodeType]);
+  }, [nodeType, token, authLoading]);
 
   const filtered = useMemo(() => {
     let list = nodes;

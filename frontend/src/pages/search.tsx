@@ -7,11 +7,13 @@ import { CardListSkeleton } from "@/components/skeletons";
 import { Filters } from "@/components/filters";
 import { t, localized } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
+import { useAuth } from "@/lib/auth";
 
 const SUGGESTIONS = ["serverless", "lambda", "terraform", "knowledge graph", "bedrock", "mcp"];
 
 export default function SearchPage() {
   const { locale } = usePrefs();
+  const { token } = useAuth();
   const [query, setQuery] = useState("");
   const [type, setType] = useState("");
   const [status, setStatus] = useState("");
@@ -23,10 +25,10 @@ export default function SearchPage() {
     if (!q.trim() || q.trim().length < 2) { setData(null); return; }
     setLoading(true); setError("");
     try {
-      setData(await api.search(q, { type: type || undefined, status: status || undefined, limit: 20 }));
+      setData(await api.search(q, { type: type || undefined, status: status || undefined, limit: 20 }, token));
     } catch (e: unknown) { setError(e instanceof Error ? e.message : "Error"); }
     finally { setLoading(false); }
-  }, [type, status]);
+  }, [type, status, token]);
 
   // Debounced search on query change
   useEffect(() => {

@@ -8,6 +8,7 @@ import { StatusIcon, StatusBadge } from "@/components/badges";
 import { DashboardSkeleton } from "@/components/skeletons";
 import { t, localized, typeLabel, statusLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
+import { useAuth } from "@/lib/auth";
 
 const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   concept: Brain, note: FileText, experiment: FlaskConical, essay: PenLine,
@@ -24,9 +25,10 @@ const TYPES = ["concept", "note", "experiment", "essay"] as const;
 
 export default function Dashboard() {
   const { locale } = usePrefs();
+  const { token, loading: authLoading } = useAuth();
   const [data, setData] = useState<GraphResponse | null>(null);
 
-  useEffect(() => { api.graph().then(setData).catch(() => {}); }, []);
+  useEffect(() => { if (!authLoading) api.graph(undefined, token).then(setData).catch(() => {}); }, [token, authLoading]);
 
   if (!data) return <DashboardSkeleton />;
 
