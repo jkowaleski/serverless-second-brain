@@ -90,9 +90,6 @@ function ShellInner() {
               <Link to="/" className="font-mono text-sm font-semibold" onClick={() => setOpen(false)}>
                 ssb
               </Link>
-              <span className="rounded-full border border-[var(--color-border)] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
-                alpha
-              </span>
             </div>
 
             {/* Desktop nav */}
@@ -187,7 +184,7 @@ function ShellInner() {
       <footer className="border-t border-[var(--color-border)]">
         <div className="mx-auto max-w-3xl px-6 py-8">
           <p className="text-center text-xs text-[var(--color-muted)]">
-            {t("footer", locale)} · <span className="uppercase tracking-wider">alpha</span>
+            © {new Date().getFullYear()} Jonatan Mata · v{__APP_VERSION__}
           </p>
         </div>
       </footer>
