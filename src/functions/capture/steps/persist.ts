@@ -27,7 +27,7 @@ export const handler = async (event: PersistInput): Promise<PersistOutput> => {
     slug,
     node_type: nodeType,
     status: "seed",
-    visibility: defaultVisibility,
+    visibility: input.visibility ?? defaultVisibility,
     title: metadata.title,
     title_es: metadata.title_es,
     title_en: metadata.title_en,

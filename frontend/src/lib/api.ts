@@ -32,7 +32,7 @@ export const api = {
     const qs = q.toString();
     return get<NodeResponse>(`/nodes/${slug}${qs ? `?${qs}` : ""}`, token);
   },
-  capture: async (body: { text: string; url?: string; type: string; language: string }, token: string) => {
+  capture: async (body: { text: string; url?: string; type: string; visibility?: string; language: string }, token: string) => {
     const res = await fetch(`${API}/capture`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },

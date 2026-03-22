@@ -52,6 +52,10 @@ const dict = {
   "status.growing": { es: "Creciendo", en: "Growing" },
   "status.evergreen": { es: "Perenne", en: "Evergreen" },
 
+  // Visibility
+  "visibility.public": { es: "Público", en: "Public" },
+  "visibility.private": { es: "Privado", en: "Private" },
+
   // Filters
   "filter.all_types": { es: "Todos los tipos", en: "All types" },
   "filter.all_statuses": { es: "Todos los estados", en: "All statuses" },
@@ -138,6 +142,7 @@ const dict = {
   "capture.url_label": { es: "URL de origen", en: "Source URL" },
   "capture.optional": { es: "opcional", en: "optional" },
   "capture.type_label": { es: "Tipo", en: "Type" },
+  "capture.visibility_label": { es: "Visibilidad", en: "Visibility" },
   "capture.lang_label": { es: "Idioma", en: "Language" },
   "capture.submit": { es: "Capturar", en: "Capture" },
   "capture.submitting": { es: "Procesando\u2026", en: "Processing\u2026" },

@@ -39,7 +39,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       slug,
       node_type: nodeType,
       status: "seed",
-      visibility: defaultVisibility,
+      visibility: input.visibility ?? defaultVisibility,
       title: metadata.title,
       title_es: metadata.title_es,
       title_en: metadata.title_en,

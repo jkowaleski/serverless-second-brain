@@ -56,6 +56,7 @@ export interface CaptureRequest {
   url?: string;
   type?: string;
   language?: "es" | "en";
+  visibility?: "public" | "private";
   actor?: string;
 }
 

@@ -17,6 +17,7 @@ export default function Capture() {
   const [text, setText] = useState("");
   const [url, setUrl] = useState("");
   const [type, setType] = useState("concept");
+  const [visibility, setVisibility] = useState<"public" | "private">("private");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<CaptureResult | null>(null);
@@ -45,7 +46,7 @@ export default function Capture() {
     if (!valid || !token) return;
     setLoading(true); setError(""); setResult(null);
     try {
-      const raw = await api.capture({ text, url: url || undefined, type, language: locale }, token);
+      const raw = await api.capture({ text, url: url || undefined, type, visibility, language: locale }, token);
       const node = typeof raw === "string" ? JSON.parse(raw) : raw;
       setResult(node); setText(""); setUrl("");
     } catch (err: unknown) {
@@ -109,6 +110,18 @@ export default function Capture() {
                   <button key={tp} type="button" role="radio" aria-checked={type === tp} onClick={() => setType(tp)}
                     className={`rounded-lg border px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors ${type === tp ? "border-[var(--color-fg)] bg-[var(--color-fg)] text-[var(--color-bg)]" : "border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-muted)] hover:text-[var(--color-fg)]"}`}>
                     {t(`type.${tp}` as Parameters<typeof t>[0], locale)}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+
+          <fieldset className="space-y-1.5" disabled={loading}>
+              <legend className="text-sm font-medium">{t("capture.visibility_label", locale)}</legend>
+              <div className="flex flex-wrap gap-1.5" role="radiogroup">
+                {(["public", "private"] as const).map((v) => (
+                  <button key={v} type="button" role="radio" aria-checked={visibility === v} onClick={() => setVisibility(v)}
+                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors ${visibility === v ? "border-[var(--color-fg)] bg-[var(--color-fg)] text-[var(--color-bg)]" : "border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-muted)] hover:text-[var(--color-fg)]"}`}>
+                    {t(`visibility.${v}` as Parameters<typeof t>[0], locale)}
                   </button>
                 ))}
               </div>
