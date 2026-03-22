@@ -8,6 +8,7 @@ import { MarkdownBody } from "@/components/markdown-body";
 import { NodeDetailSkeleton } from "@/components/skeletons";
 import { t, localized, typeLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
+import { useAuth } from "@/lib/auth";
 
 const TYPE_TO_SECTION: Record<string, string> = {
   concept: "concepts",
@@ -18,6 +19,7 @@ const TYPE_TO_SECTION: Record<string, string> = {
 
 export default function NodePage() {
   const { locale } = usePrefs();
+  const { token } = useAuth();
   const [params] = useSearchParams();
   const slug = params.get("id") ?? "";
   const [data, setData] = useState<NodeResponse | null>(null);
@@ -27,8 +29,8 @@ export default function NodePage() {
     if (!slug) return;
     setData(null);
     setError("");
-    api.node(slug, { include_body: true, language: locale }).then(setData).catch((e) => setError(e.message));
-  }, [slug, locale]);
+    api.node(slug, { include_body: true, language: locale }, token).then(setData).catch((e) => setError(e.message));
+  }, [slug, locale, token]);
 
   if (!slug) return <p className="py-12 text-center text-[var(--color-muted)]">{t("node.empty", locale)}</p>;
   if (error) return <p className="py-12 text-center text-red-500">{t("common.error", locale, { msg: error })}</p>;
