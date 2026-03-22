@@ -38,3 +38,4 @@ Thumbs.db
 *.log
 scripts/node_modules/
 scripts/package-lock.json
+plan.out

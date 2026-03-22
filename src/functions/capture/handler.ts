@@ -2,7 +2,6 @@
  * Monolithic capture handler — API Gateway Lambda proxy integration.
  *
  * Handles the full capture pipeline: validate → classify → persist → edges.
- * Step Functions step handlers in steps/ are kept for async/batch use.
  */
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
@@ -10,14 +9,12 @@ import { validateCaptureRequest, generateSlug } from "../../shared/validation.js
 import { getNode, putNode, putEdge, putAudit, listNodeSlugs, bumpCacheVersion, updateNodeVisibility } from "../../shared/dynamodb.js";
 import { putBody } from "../../shared/s3.js";
 import { classify } from "../../shared/bedrock.js";
+import { jsonResponse, errorResponse, corsHeaders } from "../../shared/http.js";
+import { auditTtl } from "../../shared/math.js";
 import { ValidationError, DuplicateError, BedrockError, NotFoundError } from "../../shared/errors.js";
 import type { MetaItem, EdgeItem, AuditItem, CaptureResponse } from "../../shared/types.js";
 
-const CORS = {
-  "Access-Control-Allow-Origin": process.env.CORS_ALLOW_ORIGIN ?? "*",
-  "Access-Control-Allow-Headers": "Content-Type,Authorization",
-  "Access-Control-Allow-Methods": "POST,OPTIONS",
-};
+const CORS = corsHeaders("POST,PATCH,OPTIONS");
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const method = event.httpMethod;
@@ -122,7 +119,7 @@ async function handleCapture(event: APIGatewayProxyEvent): Promise<APIGatewayPro
       action: "create",
       actor,
       changes: { node_type: nodeType, status: "seed" },
-      ttl: Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60,
+      ttl: auditTtl(),
     };
     await putAudit(audit);
     await bumpCacheVersion();

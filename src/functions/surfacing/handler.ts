@@ -1,5 +1,6 @@
 import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 import { getAllNodes, getAllEdges, getAllEmbeddings } from "../../shared/dynamodb.js";
+import { cosine } from "../../shared/math.js";
 import type { MetaItem, EdgeItem, EmbedItem } from "../../shared/types.js";
 
 const sns = new SNSClient({});
@@ -43,17 +44,6 @@ interface Digest {
 
 function daysSince(isoDate: string): number {
   return Math.floor((Date.now() - new Date(isoDate).getTime()) / 86400000);
-}
-
-function cosine(a: number[], b: number[]): number {
-  let dot = 0, magA = 0, magB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    magA += a[i] * a[i];
-    magB += b[i] * b[i];
-  }
-  const denom = Math.sqrt(magA) * Math.sqrt(magB);
-  return denom === 0 ? 0 : dot / denom;
 }
 
 function findStaleSeed(nodes: MetaItem[]) {

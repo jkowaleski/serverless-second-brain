@@ -1,30 +1,19 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { getAllNodes, getAllEmbeddings } from "../../shared/dynamodb.js";
+import { getAllNodes, getAllEmbeddings, getCacheVersion } from "../../shared/dynamodb.js";
 import { embed } from "../../shared/bedrock.js";
 import { ValidationError } from "../../shared/errors.js";
 import { isAuthenticated } from "../../shared/auth.js";
+import { cosine } from "../../shared/math.js";
+import { jsonResponse, errorResponse } from "../../shared/http.js";
 import type { MetaItem, EmbedItem } from "../../shared/types.js";
 
 const KEYWORD_WEIGHT = 0.3;
 const SEMANTIC_WEIGHT = 0.7;
-const CORS_ORIGIN = process.env.CORS_ALLOW_ORIGIN ?? "*";
 
-// In-memory cache for warm Lambda invocations
+// In-memory cache for warm Lambda invocations — version-based (same as graph)
 let cachedNodes: MetaItem[] | null = null;
 let cachedEmbeddings: EmbedItem[] | null = null;
-let cacheTime = 0;
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
-function cosine(a: number[], b: number[]): number {
-  let dot = 0, magA = 0, magB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    magA += a[i] * a[i];
-    magB += b[i] * b[i];
-  }
-  const denom = Math.sqrt(magA) * Math.sqrt(magB);
-  return denom === 0 ? 0 : dot / denom;
-}
+let cacheVersion = "";
 
 function keywordScore(node: MetaItem, terms: string[]): number {
   const text = `${node.title} ${node.title_es} ${node.title_en} ${node.summary_es} ${node.summary_en} ${node.tags.join(" ")}`.toLowerCase();
@@ -47,10 +36,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const start = Date.now();
     const authed = await isAuthenticated(event);
 
-    // Load or use cache
-    if (!cachedNodes || !cachedEmbeddings || Date.now() - cacheTime > CACHE_TTL_MS) {
+    // Load or use cache — version-based invalidation
+    const currentVersion = await getCacheVersion();
+    if (!cachedNodes || !cachedEmbeddings || currentVersion !== cacheVersion) {
       [cachedNodes, cachedEmbeddings] = await Promise.all([getAllNodes(), getAllEmbeddings()]);
-      cacheTime = Date.now();
+      cacheVersion = currentVersion;
     }
 
     // Build embedding lookup
@@ -92,21 +82,17 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
 
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN },
-      body: JSON.stringify({
-        query: q,
-        results: scored,
-        total: scored.length,
-        took_ms: Date.now() - start,
-      }),
-    };
+    return jsonResponse(200, {
+      query: q,
+      results: scored,
+      total: scored.length,
+      took_ms: Date.now() - start,
+    });
   } catch (error) {
     if (error instanceof ValidationError) {
-      return { statusCode: 400, body: JSON.stringify({ error: "validation_error", message: error.message }) };
+      return errorResponse(400, "validation_error", error.message);
     }
     console.error("Search error:", JSON.stringify(error));
-    return { statusCode: 500, body: JSON.stringify({ error: "internal_error", message: "Internal server error" }) };
+    return errorResponse(500, "internal_error", "Internal server error");
   }
 };

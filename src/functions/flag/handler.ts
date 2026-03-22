@@ -1,4 +1,6 @@
 import { getNode, putAudit } from "../../shared/dynamodb.js";
+import { jsonResponse, errorResponse } from "../../shared/http.js";
+import { auditTtl } from "../../shared/math.js";
 import type { AuditItem } from "../../shared/types.js";
 
 interface FlagRequest {
@@ -7,37 +9,28 @@ interface FlagRequest {
   actor?: string;
 }
 
-const CORS_ORIGIN = process.env.CORS_ALLOW_ORIGIN ?? "*";
-const HEADERS = { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN };
-
 export const handler = async (event: Record<string, unknown>) => {
   try {
     const body = typeof event.body === "string" ? JSON.parse(event.body) : event;
     const { slug, reason, actor = "api" } = body as FlagRequest;
 
-    if (!slug || !reason) {
-      return { statusCode: 400, headers: HEADERS, body: JSON.stringify({ error: "validation_error", message: "slug and reason are required" }) };
-    }
+    if (!slug || !reason) return errorResponse(400, "validation_error", "slug and reason are required");
 
     const node = await getNode(slug);
-    if (!node) return { statusCode: 404, headers: HEADERS, body: JSON.stringify({ error: "not_found", message: `Node '${slug}' not found` }) };
+    if (!node) return errorResponse(404, "not_found", `Node '${slug}' not found`);
 
     const now = new Date().toISOString();
     const audit: AuditItem = {
       PK: `AUDIT#${now}`, SK: `NODE#${slug}`,
       action: "flag", actor,
       changes: { reason, node_status: node.status, node_type: node.node_type },
-      ttl: Math.floor(Date.now() / 1000) + 90 * 86400,
+      ttl: auditTtl(),
     };
     await putAudit(audit);
 
-    return {
-      statusCode: 200,
-      headers: HEADERS,
-      body: JSON.stringify({ slug, flagged: true, reason, flagged_at: now }),
-    };
+    return jsonResponse(200, { slug, flagged: true, reason, flagged_at: now });
   } catch (err) {
     console.error("flag_stale error:", err);
-    return { statusCode: 500, headers: HEADERS, body: JSON.stringify({ error: "internal_error", message: "Failed to flag node" }) };
+    return errorResponse(500, "internal_error", "Failed to flag node");
   }
 };

@@ -29,8 +29,9 @@ variable "api_gateway_stage" {
 }
 
 variable "state_machine_name" {
-  description = "Step Functions state machine name"
+  description = "Step Functions state machine name (optional, omit if SFN removed)"
   type        = string
+  default     = ""
 }
 
 variable "alarm_sns_topic_arn" {
@@ -250,29 +251,11 @@ resource "aws_cloudwatch_dashboard" "main" {
           }
         }
       ],
-      # Step Functions
+      # Bedrock
       [
         {
           type   = "metric"
           x      = 0
-          y      = 25
-          width  = 12
-          height = 6
-          properties = {
-            title  = "Step Functions Executions"
-            region = data.aws_region.current.name
-            stat   = "Sum"
-            period = 300
-            metrics = [
-              ["AWS/States", "ExecutionsStarted", "StateMachineArn", data.aws_sfn_state_machine.capture.arn],
-              ["AWS/States", "ExecutionsSucceeded", "StateMachineArn", data.aws_sfn_state_machine.capture.arn],
-              ["AWS/States", "ExecutionsFailed", "StateMachineArn", data.aws_sfn_state_machine.capture.arn]
-            ]
-          }
-        },
-        {
-          type   = "metric"
-          x      = 12
           y      = 25
           width  = 12
           height = 6
@@ -387,21 +370,6 @@ resource "aws_cloudwatch_metric_alarm" "api_5xx" {
   }
 }
 
-resource "aws_cloudwatch_metric_alarm" "sfn_failures" {
-  alarm_name          = "${var.project_name}-${var.environment}-sfn-failures"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 1
-  period              = 300
-  threshold           = 0
-  statistic           = "Sum"
-  metric_name         = "ExecutionsFailed"
-  namespace           = "AWS/States"
-  dimensions          = { StateMachineArn = data.aws_sfn_state_machine.capture.arn }
-  alarm_description   = "Step Functions capture pipeline failure"
-  treat_missing_data  = "notBreaching"
-  alarm_actions       = [var.alarm_sns_topic_arn]
-}
-
 # --- X-Ray tracing ---
 # Lambda: active tracing enabled via tracing_config in Lambda module
 # API Gateway: xray_tracing_enabled in api-gateway module stage
@@ -409,10 +377,6 @@ resource "aws_cloudwatch_metric_alarm" "sfn_failures" {
 # --- Data sources ---
 
 data "aws_region" "current" {}
-
-data "aws_sfn_state_machine" "capture" {
-  name = "${var.project_name}-${var.environment}-capture-pipeline"
-}
 
 # --- Outputs ---
 
@@ -429,6 +393,5 @@ output "alarm_names" {
     [for a in aws_cloudwatch_metric_alarm.lambda_errors : a.alarm_name],
     [aws_cloudwatch_metric_alarm.dynamodb_throttle.alarm_name],
     [aws_cloudwatch_metric_alarm.api_5xx.alarm_name],
-    [aws_cloudwatch_metric_alarm.sfn_failures.alarm_name]
   )
 }

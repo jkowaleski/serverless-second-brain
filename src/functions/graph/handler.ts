@@ -1,25 +1,14 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { getNode, getAllNodes, getAllEdges, getNodeEdges, getInboundEdges, batchGetNodes } from "../../shared/dynamodb.js";
+import { getNode, getAllNodes, getAllEdges, getNodeEdges, getInboundEdges, batchGetNodes, getCacheVersion } from "../../shared/dynamodb.js";
 import { getBody } from "../../shared/s3.js";
 import { NotFoundError } from "../../shared/errors.js";
 import { isAuthenticated } from "../../shared/auth.js";
+import { jsonResponse, errorResponse } from "../../shared/http.js";
 import type { MetaItem, EdgeItem } from "../../shared/types.js";
 
 // In-memory cache for warm invocations
 let cachedGraph: { nodes: MetaItem[]; edges: EdgeItem[] } | null = null;
 let cacheVersion = "";
-const CORS_ORIGIN = process.env.CORS_ALLOW_ORIGIN ?? "*";
-
-async function getCacheVersion(): Promise<string> {
-  const { DynamoDBClient, GetItemCommand } = await import("@aws-sdk/client-dynamodb");
-  const client = new DynamoDBClient({});
-  const res = await client.send(new GetItemCommand({
-    TableName: process.env.TABLE_NAME!,
-    Key: { PK: { S: "SYSTEM#config" }, SK: { S: "CACHE_VERSION" } },
-    ProjectionExpression: "version",
-  }));
-  return res.Item?.version?.S ?? "";
-}
 
 async function loadGraph() {
   const currentVersion = await getCacheVersion();
@@ -80,19 +69,15 @@ async function handleGraph(event: APIGatewayProxyEvent): Promise<APIGatewayProxy
     edgeCounts.set(src, (edgeCounts.get(src) ?? 0) + 1);
   }
 
-  return {
-    statusCode: 200,
-    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN },
-    body: JSON.stringify({
-      nodes: nodes.map((n) => ({ ...formatNode(n), edge_count: edgeCounts.get(n.slug) ?? 0 })),
-      edges: edges.map(formatEdge),
-      meta: {
-        node_count: nodes.length,
-        edge_count: edges.length,
-        generated_at: new Date().toISOString(),
-      },
-    }),
-  };
+  return jsonResponse(200, {
+    nodes: nodes.map((n) => ({ ...formatNode(n), edge_count: edgeCounts.get(n.slug) ?? 0 })),
+    edges: edges.map(formatEdge),
+    meta: {
+      node_count: nodes.length,
+      edge_count: edges.length,
+      generated_at: new Date().toISOString(),
+    },
+  });
 }
 
 async function handleNode(slug: string, authed: boolean, event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
@@ -121,34 +106,30 @@ async function handleNode(slug: string, authed: boolean, event: APIGatewayProxyE
     if (!body && language === "en") body = await getBody(node.node_type, slug, "es");
   }
 
-  return {
-    statusCode: 200,
-    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN },
-    body: JSON.stringify({
-      node: {
-        id: node.slug,
-        title: node.title,
-        title_es: node.title_es,
-        title_en: node.title_en,
-        summary_es: node.summary_es,
-        summary_en: node.summary_en,
-        node_type: node.node_type,
-        status: node.status,
-        tags: node.tags,
-        created_at: node.created_at,
-        updated_at: node.updated_at,
-        word_count_es: node.word_count_es,
-        word_count_en: node.word_count_en,
-      },
-      edges: outbound.map((e) => ({
-        target: e.SK.replace("EDGE#", ""),
-        edge_type: e.edge_type,
-        weight: e.weight,
-      })),
-      related: relatedNodes,
-      ...(body !== null && { body }),
-    }),
-  };
+  return jsonResponse(200, {
+    node: {
+      id: node.slug,
+      title: node.title,
+      title_es: node.title_es,
+      title_en: node.title_en,
+      summary_es: node.summary_es,
+      summary_en: node.summary_en,
+      node_type: node.node_type,
+      status: node.status,
+      tags: node.tags,
+      created_at: node.created_at,
+      updated_at: node.updated_at,
+      word_count_es: node.word_count_es,
+      word_count_en: node.word_count_en,
+    },
+    edges: outbound.map((e) => ({
+      target: e.SK.replace("EDGE#", ""),
+      edge_type: e.edge_type,
+      weight: e.weight,
+    })),
+    related: relatedNodes,
+    ...(body !== null && { body }),
+  });
 }
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
@@ -158,9 +139,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     return await handleGraph(event);
   } catch (error) {
     if (error instanceof NotFoundError) {
-      return { statusCode: 404, body: JSON.stringify({ error: "not_found", message: error.message }) };
+      return errorResponse(404, "not_found", error.message);
     }
     console.error("Graph error:", JSON.stringify(error));
-    return { statusCode: 500, body: JSON.stringify({ error: "internal_error", message: "Internal server error" }) };
+    return errorResponse(500, "internal_error", "Internal server error");
   }
 };

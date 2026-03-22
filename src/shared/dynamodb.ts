@@ -156,6 +156,15 @@ export async function bumpCacheVersion(): Promise<void> {
   }));
 }
 
+export async function getCacheVersion(): Promise<string> {
+  const res = await ddb.send(new GetCommand({
+    TableName: TABLE_NAME,
+    Key: { PK: "SYSTEM#config", SK: "CACHE_VERSION" },
+    ProjectionExpression: "version",
+  }));
+  return (res.Item?.version as string) ?? "";
+}
+
 export async function updateNodeVisibility(slug: string, visibility: "public" | "private"): Promise<void> {
   await ddb.send(new UpdateCommand({
     TableName: TABLE_NAME,
