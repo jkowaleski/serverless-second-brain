@@ -166,12 +166,14 @@ export function localized(item: { title_es?: string; title_en?: string; summary_
 
 /** Get type label */
 export function typeLabel(type: string, locale: Locale): string {
+  if (!type) return type;
   const key = `type.${type}` as DictKey;
   return t(key, locale);
 }
 
 /** Get status label */
 export function statusLabel(status: string, locale: Locale): string {
+  if (!status) return status;
   const key = `status.${status}` as DictKey;
   return t(key, locale);
 }

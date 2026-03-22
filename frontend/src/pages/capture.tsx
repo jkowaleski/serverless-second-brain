@@ -45,7 +45,8 @@ export default function Capture() {
     if (!valid || !token) return;
     setLoading(true); setError(""); setResult(null);
     try {
-      const res = await api.capture({ text, url: url || undefined, type, language: locale }, token);
+      const raw = await api.capture({ text, url: url || undefined, type, language: locale }, token);
+      const res = raw.node ?? raw;
       setResult(res); setText(""); setUrl("");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Error";
