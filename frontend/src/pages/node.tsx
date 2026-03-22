@@ -49,7 +49,7 @@ export default function NodePage() {
 
       {/* Header */}
       <header>
-        <h1 className="text-2xl font-semibold">{node.title}</h1>
+        <h1 className="text-2xl font-semibold">{localized(node, "title", locale)}</h1>
         <p className="mt-2 text-sm text-[var(--color-muted)]">
           {localized(node, "summary", locale)}
         </p>

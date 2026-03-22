@@ -18,6 +18,7 @@ export default function Capture() {
   const [url, setUrl] = useState("");
   const [type, setType] = useState("concept");
   const [visibility, setVisibility] = useState<"public" | "private">("private");
+  const [lang, setLang] = useState<"es" | "en">(locale as "es" | "en");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<CaptureResult | null>(null);
@@ -46,7 +47,7 @@ export default function Capture() {
     if (!valid || !token) return;
     setLoading(true); setError(""); setResult(null);
     try {
-      const raw = await api.capture({ text, url: url || undefined, type, visibility, language: locale }, token);
+      const raw = await api.capture({ text, url: url || undefined, type, visibility, language: lang }, token);
       const node = typeof raw === "string" ? JSON.parse(raw) : raw;
       setResult(node); setText(""); setUrl("");
     } catch (err: unknown) {
@@ -122,6 +123,18 @@ export default function Capture() {
                   <button key={v} type="button" role="radio" aria-checked={visibility === v} onClick={() => setVisibility(v)}
                     className={`rounded-lg border px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors ${visibility === v ? "border-[var(--color-fg)] bg-[var(--color-fg)] text-[var(--color-bg)]" : "border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-muted)] hover:text-[var(--color-fg)]"}`}>
                     {t(`visibility.${v}` as Parameters<typeof t>[0], locale)}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+
+          <fieldset className="space-y-1.5" disabled={loading}>
+              <legend className="text-sm font-medium">{t("capture.lang_label", locale)}</legend>
+              <div className="flex flex-wrap gap-1.5" role="radiogroup">
+                {(["es", "en"] as const).map((l) => (
+                  <button key={l} type="button" role="radio" aria-checked={lang === l} onClick={() => setLang(l)}
+                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors ${lang === l ? "border-[var(--color-fg)] bg-[var(--color-fg)] text-[var(--color-bg)]" : "border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-muted)] hover:text-[var(--color-fg)]"}`}>
+                    {l === "es" ? "Español" : "English"}
                   </button>
                 ))}
               </div>
