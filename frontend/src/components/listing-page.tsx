@@ -3,6 +3,7 @@ import { Search, X } from "lucide-react";
 import { api } from "@/lib/api";
 import type { GraphNode } from "@/lib/types";
 import { NodeCard } from "@/components/node-card";
+import { CardListSkeleton } from "@/components/skeletons";
 import { StatusIcon } from "@/components/badges";
 import { t, typeLabel, statusLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
@@ -83,7 +84,7 @@ export function ListingPage({ nodeType }: { nodeType: string }) {
       )}
 
       {loading ? (
-        <p className="py-12 text-center text-[var(--color-muted)]">{t("common.loading", locale)}</p>
+        <CardListSkeleton />
       ) : filtered.length === 0 ? (
         <p className="py-12 text-center text-[var(--color-muted)]">{t("listing.empty", locale)}</p>
       ) : (

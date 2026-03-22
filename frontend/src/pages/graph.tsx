@@ -36,7 +36,7 @@ export default function Graph() {
 
       <Filters type={type} status={status} onTypeChange={setType} onStatusChange={setStatus} />
 
-      {data ? <ForceGraph nodes={data.nodes} edges={data.edges} /> : <p className="text-[var(--color-muted)]">{t("graph.loading", locale)}</p>}
+      {data ? <ForceGraph nodes={data.nodes} edges={data.edges} /> : <div className="h-[60vh] animate-pulse rounded-lg border border-[var(--color-border)] bg-[var(--color-border)]" />}
     </div>
   );
 }

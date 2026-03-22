@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import type { GraphResponse } from "@/lib/types";
 import { TYPE_COLORS } from "@/lib/constants";
 import { StatusIcon, StatusBadge } from "@/components/badges";
+import { DashboardSkeleton } from "@/components/skeletons";
 import { t, typeLabel, statusLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
 
@@ -27,7 +28,7 @@ export default function Dashboard() {
 
   useEffect(() => { api.graph().then(setData).catch(() => {}); }, []);
 
-  if (!data) return <p className="py-12 text-center text-[var(--color-muted)]">{t("common.loading", locale)}</p>;
+  if (!data) return <DashboardSkeleton />;
 
   const byType: Record<string, number> = {};
   const byStatus: Record<string, number> = {};
