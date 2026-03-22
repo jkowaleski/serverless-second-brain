@@ -34,6 +34,8 @@ jobs:
           echo "api_url=$(aws ssm get-parameter --name /${{ env.PROJECT }}/dev/api/url --query Parameter.Value --output text)" >> "$GITHUB_OUTPUT"
           echo "bucket=$(aws ssm get-parameter --name /${{ env.PROJECT }}/dev/frontend/bucket --query Parameter.Value --output text)" >> "$GITHUB_OUTPUT"
           echo "distribution_id=$(aws ssm get-parameter --name /${{ env.PROJECT }}/dev/frontend/cloudfront-distribution-id --query Parameter.Value --output text)" >> "$GITHUB_OUTPUT"
+          echo "cognito_domain=$(aws ssm get-parameter --name /${{ env.PROJECT }}/dev/cognito/domain --query Parameter.Value --output text 2>/dev/null || echo '')" >> "$GITHUB_OUTPUT"
+          echo "cognito_client_id=$(aws ssm get-parameter --name /${{ env.PROJECT }}/dev/cognito/spa-client-id --query Parameter.Value --output text 2>/dev/null || echo '')" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v4
         with:
@@ -46,11 +48,18 @@ jobs:
       - name: Build
         working-directory: frontend
         env:
-          NEXT_PUBLIC_API_URL: ${{ steps.ssm.outputs.api_url }}
-        run: npx next build
+          VITE_API_URL: ${{ steps.ssm.outputs.api_url }}
+          VITE_COGNITO_DOMAIN: ${{ steps.ssm.outputs.cognito_domain }}
+          VITE_COGNITO_CLIENT_ID: ${{ steps.ssm.outputs.cognito_client_id }}
+        run: npm run build
 
       - name: Deploy to S3
-        run: aws s3 sync frontend/out/ s3://${{ steps.ssm.outputs.bucket }} --delete
+        run: |
+          aws s3 sync frontend/dist/ s3://${{ steps.ssm.outputs.bucket }} --delete
+          aws s3 cp s3://${{ steps.ssm.outputs.bucket }}/index.html s3://${{ steps.ssm.outputs.bucket }}/index.html \
+            --content-type "text/html" \
+            --cache-control "no-cache, no-store, must-revalidate" \
+            --metadata-directive REPLACE
 
       - name: Invalidate CloudFront
         run: aws cloudfront create-invalidation --distribution-id ${{ steps.ssm.outputs.distribution_id }} --paths "/*"
@@ -74,6 +83,8 @@ jobs:
           echo "api_url=$(aws ssm get-parameter --name /${{ env.PROJECT }}/prod/api/url --query Parameter.Value --output text)" >> "$GITHUB_OUTPUT"
           echo "bucket=$(aws ssm get-parameter --name /${{ env.PROJECT }}/prod/frontend/bucket --query Parameter.Value --output text)" >> "$GITHUB_OUTPUT"
           echo "distribution_id=$(aws ssm get-parameter --name /${{ env.PROJECT }}/prod/frontend/cloudfront-distribution-id --query Parameter.Value --output text)" >> "$GITHUB_OUTPUT"
+          echo "cognito_domain=$(aws ssm get-parameter --name /${{ env.PROJECT }}/prod/cognito/domain --query Parameter.Value --output text 2>/dev/null || echo '')" >> "$GITHUB_OUTPUT"
+          echo "cognito_client_id=$(aws ssm get-parameter --name /${{ env.PROJECT }}/prod/cognito/spa-client-id --query Parameter.Value --output text 2>/dev/null || echo '')" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v4
         with:
@@ -86,11 +97,18 @@ jobs:
       - name: Build
         working-directory: frontend
         env:
-          NEXT_PUBLIC_API_URL: ${{ steps.ssm.outputs.api_url }}
-        run: npx next build
+          VITE_API_URL: ${{ steps.ssm.outputs.api_url }}
+          VITE_COGNITO_DOMAIN: ${{ steps.ssm.outputs.cognito_domain }}
+          VITE_COGNITO_CLIENT_ID: ${{ steps.ssm.outputs.cognito_client_id }}
+        run: npm run build
 
       - name: Deploy to S3
-        run: aws s3 sync frontend/out/ s3://${{ steps.ssm.outputs.bucket }} --delete
+        run: |
+          aws s3 sync frontend/dist/ s3://${{ steps.ssm.outputs.bucket }} --delete
+          aws s3 cp s3://${{ steps.ssm.outputs.bucket }}/index.html s3://${{ steps.ssm.outputs.bucket }}/index.html \
+            --content-type "text/html" \
+            --cache-control "no-cache, no-store, must-revalidate" \
+            --metadata-directive REPLACE
 
       - name: Invalidate CloudFront
         run: aws cloudfront create-invalidation --distribution-id ${{ steps.ssm.outputs.distribution_id }} --paths "/*"
