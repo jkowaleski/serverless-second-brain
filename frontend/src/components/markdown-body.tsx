@@ -1,6 +1,7 @@
 import { useEffect, useState, type ComponentProps } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import type { BundledLanguage } from "shiki";
 import { Mermaid } from "./mermaid";
 
@@ -77,6 +78,7 @@ export function MarkdownBody({ content }: { content: string }) {
     <div className="prose dark:prose-invert max-w-none">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeRaw]}
         components={{
           pre({ children }) { return <>{children}</>; },
           code(props) { return <CodeBlock {...props} />; },
