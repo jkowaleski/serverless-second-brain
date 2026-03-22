@@ -46,8 +46,8 @@ export default function Capture() {
     setLoading(true); setError(""); setResult(null);
     try {
       const raw = await api.capture({ text, url: url || undefined, type, language: locale }, token);
-      const res = raw.node ?? raw;
-      setResult(res); setText(""); setUrl("");
+      const node = typeof raw === "string" ? JSON.parse(raw) : raw;
+      setResult(node); setText(""); setUrl("");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Error";
       if (msg.includes("401")) { setShowLogin(true); return; }
