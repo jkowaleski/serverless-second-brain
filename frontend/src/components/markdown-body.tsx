@@ -90,8 +90,8 @@ export function MarkdownBody({ content }: { content: string }) {
             );
           },
           a({ href, children }) {
-            // Only embed YouTube links from preprocessed <YouTube /> tags
-            if (href && YT_RE.test(href) && Array.isArray(children) && children[0] === "YouTube") return <YouTubeEmbed url={href} />;
+            const text = Array.isArray(children) ? children.join("") : String(children ?? "");
+            if (href && YT_RE.test(href) && text === "YouTube") return <YouTubeEmbed url={href} />;
             return <a href={href}>{children}</a>;
           },
           p({ children, node }) {
