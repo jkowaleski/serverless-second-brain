@@ -47,33 +47,20 @@ jobs:
     strategy:
       matrix:
         include:
-          # Capture handlers — all share the same code package
           - function: capture
             handler_dir: functions/capture
-          - function: capture-validate
-            handler_dir: functions/capture
-          - function: capture-classify
-            handler_dir: functions/capture
-          - function: capture-persist
-            handler_dir: functions/capture
-          - function: capture-edges
-            handler_dir: functions/capture
-          # Search Lambda
+          - function: enrich
+            handler_dir: functions/enrich
           - function: search
             handler_dir: functions/search
-          # Graph Lambda
           - function: graph
             handler_dir: functions/graph
-          # Connect Lambda (MCP write tool)
           - function: connect
             handler_dir: functions/connect
-          # Flag Lambda (MCP write tool)
           - function: flag
             handler_dir: functions/flag
-          # Surfacing Lambda (Phase 4)
           - function: surfacing
             handler_dir: functions/surfacing
-          # Authorizer Lambda (Auth)
           - function: authorizer
             handler_dir: functions/authorizer
     steps:
@@ -95,18 +82,10 @@ jobs:
 
       - name: Package Lambda
         run: |
-          mkdir -p package
-          # Flat structure — handler files at root, shared alongside
-          cp -r src/dist/${{ matrix.handler_dir }}/* package/
           mkdir -p package/shared
+          cp -r src/dist/${{ matrix.handler_dir }}/* package/
           cp -r src/dist/shared/* package/shared/
-          # Fix imports: root files ../../shared/ → ./shared/
           find package -maxdepth 1 -name '*.js' -exec sed -i 's|\.\./\.\./shared/|./shared/|g' {} +
-          # Fix imports: steps/ files ../../../shared/ → ../shared/
-          if [ -d package/steps ]; then
-            find package/steps -name '*.js' -exec sed -i 's|\.\./\.\./\.\./shared/|../shared/|g' {} +
-          fi
-          # ESM support
           echo '{"type":"module"}' > package/package.json
           cp -r src/node_modules package/
           cd package && zip -r ../deploy.zip .
@@ -132,14 +111,8 @@ jobs:
         include:
           - function: capture
             handler_dir: functions/capture
-          - function: capture-validate
-            handler_dir: functions/capture
-          - function: capture-classify
-            handler_dir: functions/capture
-          - function: capture-persist
-            handler_dir: functions/capture
-          - function: capture-edges
-            handler_dir: functions/capture
+          - function: enrich
+            handler_dir: functions/enrich
           - function: search
             handler_dir: functions/search
           - function: graph
@@ -171,14 +144,10 @@ jobs:
 
       - name: Package Lambda
         run: |
-          mkdir -p package
-          cp -r src/dist/${{ matrix.handler_dir }}/* package/
           mkdir -p package/shared
+          cp -r src/dist/${{ matrix.handler_dir }}/* package/
           cp -r src/dist/shared/* package/shared/
           find package -maxdepth 1 -name '*.js' -exec sed -i 's|\.\./\.\./shared/|./shared/|g' {} +
-          if [ -d package/steps ]; then
-            find package/steps -name '*.js' -exec sed -i 's|\.\./\.\./\.\./shared/|../shared/|g' {} +
-          fi
           echo '{"type":"module"}' > package/package.json
           cp -r src/node_modules package/
           cd package && zip -r ../deploy.zip .

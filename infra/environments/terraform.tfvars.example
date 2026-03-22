@@ -1,25 +1,14 @@
-# Default configuration — personal knowledge graph
-# Copy this file to terraform.tfvars and customize
-
+# Required — customize for your deployment
 project_name = "ssb"
 environment  = "dev"
+digest_email = "you@example.com"
 
-# Knowledge domain
-node_types = ["concept", "note", "experiment", "essay"]
-edge_types = ["related"]
-languages  = "es,en"
+# Frontend URLs — update after first deploy with your CloudFront domain
+cors_allow_origin     = "*"
+cognito_callback_urls = ["http://localhost:5173/callback"]
+cognito_logout_urls   = ["http://localhost:5173"]
 
-# Bedrock models (must be enabled in your AWS account)
-bedrock_model_id           = "us.anthropic.claude-sonnet-4-20250514-v1:0"
-bedrock_embedding_model_id = "amazon.titan-embed-text-v2:0"
-
-# Notifications
-digest_email = ""  # your@email.com
-
-# Surfacing thresholds
-surfacing_stale_days            = 7
-surfacing_min_edges             = 2
-surfacing_similarity_threshold  = "0.85"
-
-# CORS (use "*" for dev, your domain for prod)
-cors_allow_origin = "*"
+# Optional — defaults work for most setups
+# languages          = "es,en"
+# default_visibility = "private"
+# bedrock_model_id   = "us.anthropic.claude-sonnet-4-20250514-v1:0"
