@@ -1,7 +1,6 @@
 import { useEffect, useState, type ComponentProps } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
 import type { BundledLanguage } from "shiki";
 import { Mermaid } from "./mermaid";
 
@@ -12,7 +11,7 @@ async function getHighlighter() {
     const { createHighlighter } = await import("shiki");
     highlighter = await createHighlighter({
       themes: ["github-light-default", "github-dark-default"],
-      langs: ["typescript", "javascript", "json", "yaml", "bash", "python", "hcl", "sql", "html", "css", "markdown", "shell"],
+      langs: ["typescript", "javascript", "tsx", "jsx", "json", "yaml", "bash", "python", "hcl", "sql", "html", "css", "markdown", "shell"],
     });
   }
   return highlighter;
@@ -78,7 +77,6 @@ export function MarkdownBody({ content }: { content: string }) {
     <div className="prose dark:prose-invert max-w-none">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw]}
         components={{
           pre({ children }) { return <>{children}</>; },
           code(props) { return <CodeBlock {...props} />; },
