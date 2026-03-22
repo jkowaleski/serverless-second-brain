@@ -1,6 +1,7 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, ScanCommand, BatchGetCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import type { MetaItem, EdgeItem, EmbedItem, AuditItem } from "./types.js";
+import { nodeKey, edgeKey, META, EMBED } from "./keys.js";
 
 const client = new DynamoDBClient({});
 const ddb = DynamoDBDocumentClient.from(client);
@@ -10,7 +11,7 @@ const TABLE_NAME = process.env.TABLE_NAME!;
 export async function getNode(slug: string): Promise<MetaItem | null> {
   const result = await ddb.send(new GetCommand({
     TableName: TABLE_NAME,
-    Key: { PK: `NODE#${slug}`, SK: "META" },
+    Key: { PK: nodeKey(slug), SK: META },
   }));
   return (result.Item as MetaItem) ?? null;
 }
@@ -46,7 +47,7 @@ export async function listNodeSlugs(limit = 200): Promise<string[]> {
       TableName: TABLE_NAME,
       IndexName: "GSI1",
       KeyConditionExpression: "SK = :sk",
-      ExpressionAttributeValues: { ":sk": "META" },
+      ExpressionAttributeValues: { ":sk": META },
       ProjectionExpression: "slug",
       ExclusiveStartKey: lastKey,
       Limit: Math.min(limit - slugs.length, 100),
@@ -68,7 +69,7 @@ export async function getNodeEdges(slug: string): Promise<EdgeItem[]> {
   const result = await ddb.send(new QueryCommand({
     TableName: TABLE_NAME,
     KeyConditionExpression: "PK = :pk AND begins_with(SK, :prefix)",
-    ExpressionAttributeValues: { ":pk": `NODE#${slug}`, ":prefix": "EDGE#" },
+    ExpressionAttributeValues: { ":pk": nodeKey(slug), ":prefix": "EDGE#" },
   }));
   return (result.Items ?? []) as EdgeItem[];
 }
@@ -78,7 +79,7 @@ export async function getInboundEdges(slug: string): Promise<EdgeItem[]> {
     TableName: TABLE_NAME,
     IndexName: "GSI1",
     KeyConditionExpression: "SK = :sk",
-    ExpressionAttributeValues: { ":sk": `EDGE#${slug}` },
+    ExpressionAttributeValues: { ":sk": edgeKey(slug) },
   }));
   return (result.Items ?? []) as EdgeItem[];
 }
@@ -91,7 +92,7 @@ export async function getAllNodes(): Promise<MetaItem[]> {
       TableName: TABLE_NAME,
       IndexName: "GSI1",
       KeyConditionExpression: "SK = :sk",
-      ExpressionAttributeValues: { ":sk": "META" },
+      ExpressionAttributeValues: { ":sk": META },
       ExclusiveStartKey: lastKey,
     }));
     items.push(...(result.Items ?? []) as MetaItem[]);
@@ -108,7 +109,7 @@ export async function getAllEmbeddings(): Promise<EmbedItem[]> {
       TableName: TABLE_NAME,
       IndexName: "GSI1",
       KeyConditionExpression: "SK = :sk",
-      ExpressionAttributeValues: { ":sk": "EMBED" },
+      ExpressionAttributeValues: { ":sk": EMBED },
       ExclusiveStartKey: lastKey,
     }));
     items.push(...(result.Items ?? []) as EmbedItem[]);
@@ -136,7 +137,7 @@ export async function getAllEdges(): Promise<EdgeItem[]> {
 
 export async function batchGetNodes(slugs: string[]): Promise<MetaItem[]> {
   if (slugs.length === 0) return [];
-  const keys = [...new Set(slugs)].map((s) => ({ PK: `NODE#${s}`, SK: "META" }));
+  const keys = [...new Set(slugs)].map((s) => ({ PK: nodeKey(s), SK: META }));
   const items: MetaItem[] = [];
 
   for (let i = 0; i < keys.length; i += 100) {
@@ -168,7 +169,7 @@ export async function getCacheVersion(): Promise<string> {
 export async function updateNodeVisibility(slug: string, visibility: "public" | "private"): Promise<void> {
   await ddb.send(new UpdateCommand({
     TableName: TABLE_NAME,
-    Key: { PK: `NODE#${slug}`, SK: "META" },
+    Key: { PK: nodeKey(slug), SK: META },
     UpdateExpression: "SET visibility = :v, updated_at = :now",
     ExpressionAttributeValues: { ":v": visibility, ":now": new Date().toISOString() },
     ConditionExpression: "attribute_exists(PK)",
@@ -191,7 +192,7 @@ export async function updateNodeMeta(slug: string, fields: Record<string, unknow
 
   await ddb.send(new UpdateCommand({
     TableName: TABLE_NAME,
-    Key: { PK: `NODE#${slug}`, SK: "META" },
+    Key: { PK: nodeKey(slug), SK: META },
     UpdateExpression: `SET ${parts.join(", ")}`,
     ExpressionAttributeNames: Object.keys(names).length ? names : undefined,
     ExpressionAttributeValues: values,
@@ -204,7 +205,7 @@ export async function deleteNode(slug: string): Promise<void> {
   const res = await ddb.send(new QueryCommand({
     TableName: TABLE_NAME,
     KeyConditionExpression: "PK = :pk",
-    ExpressionAttributeValues: { ":pk": `NODE#${slug}` },
+    ExpressionAttributeValues: { ":pk": nodeKey(slug) },
     ProjectionExpression: "PK, SK",
   }));
   if (!res.Items?.length) return;

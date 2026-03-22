@@ -1,6 +1,7 @@
 import { getNode, putAudit } from "../../shared/dynamodb.js";
 import { jsonResponse, errorResponse } from "../../shared/http.js";
 import { auditTtl } from "../../shared/math.js";
+import { nodeKey, auditKey } from "../../shared/keys.js";
 import type { AuditItem } from "../../shared/types.js";
 
 interface FlagRequest {
@@ -21,7 +22,7 @@ export const handler = async (event: Record<string, unknown>) => {
 
     const now = new Date().toISOString();
     const audit: AuditItem = {
-      PK: `AUDIT#${now}`, SK: `NODE#${slug}`,
+      PK: auditKey(now), SK: nodeKey(slug),
       action: "flag", actor,
       changes: { reason, node_status: node.status, node_type: node.node_type },
       ttl: auditTtl(),

@@ -53,9 +53,7 @@ output "capture_function_arn" {
   value = module.capture_lambda.function_arn
 }
 
-output "capture_pipeline_arn" {
-  value = module.capture_pipeline.state_machine_arn
-}
+# Step Functions — REMOVED (ADR-006 superseded)
 
 output "search_function_name" {
   value = module.search_lambda.function_name

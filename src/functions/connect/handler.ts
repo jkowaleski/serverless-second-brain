@@ -1,6 +1,7 @@
 import { getNode, putEdge, putAudit } from "../../shared/dynamodb.js";
 import { jsonResponse, errorResponse } from "../../shared/http.js";
 import { auditTtl } from "../../shared/math.js";
+import { nodeKey, edgeKey, auditKey } from "../../shared/keys.js";
 import type { EdgeItem, AuditItem } from "../../shared/types.js";
 
 interface ConnectRequest {
@@ -25,12 +26,12 @@ export const handler = async (event: Record<string, unknown>) => {
 
     const now = new Date().toISOString();
 
-    const fwd: EdgeItem = { PK: `NODE#${source}`, SK: `EDGE#${target}`, edge_type, weight, created_at: now, created_by: actor };
-    const rev: EdgeItem = { PK: `NODE#${target}`, SK: `EDGE#${source}`, edge_type, weight, created_at: now, created_by: actor };
+    const fwd: EdgeItem = { PK: nodeKey(source), SK: edgeKey(target), edge_type, weight, created_at: now, created_by: actor };
+    const rev: EdgeItem = { PK: nodeKey(target), SK: edgeKey(source), edge_type, weight, created_at: now, created_by: actor };
     await Promise.all([putEdge(fwd), putEdge(rev)]);
 
     const audit: AuditItem = {
-      PK: `AUDIT#${now}`, SK: `NODE#${source}`,
+      PK: auditKey(now), SK: nodeKey(source),
       action: "connect", actor,
       changes: { source, target, edge_type, weight },
       ttl: auditTtl(),

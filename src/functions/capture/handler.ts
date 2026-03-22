@@ -12,6 +12,7 @@ import { classify, nodeChat } from "../../shared/bedrock.js";
 import type { NodeContext } from "../../shared/bedrock.js";
 import { jsonResponse, errorResponse, corsHeaders } from "../../shared/http.js";
 import { auditTtl } from "../../shared/math.js";
+import { nodeKey, edgeKey, auditKey, statusKey, fromEdgeKey, META } from "../../shared/keys.js";
 import { ValidationError, DuplicateError, BedrockError, NotFoundError } from "../../shared/errors.js";
 import type { MetaItem, EdgeItem, AuditItem, CaptureResponse, NodeChatAction } from "../../shared/types.js";
 
@@ -41,7 +42,7 @@ async function handleChat(event: APIGatewayProxyEvent, body: { slug?: string; me
 
     // Get edges
     const edges = await getNodeEdges(slug);
-    const edgeSlugs = edges.map((e) => e.SK.replace("EDGE#", ""));
+    const edgeSlugs = edges.map((e) => fromEdgeKey(e.SK));
 
     const context: NodeContext = {
       slug, node_type: node.node_type, status: node.status,
@@ -72,7 +73,7 @@ async function handleChat(event: APIGatewayProxyEvent, body: { slug?: string; me
 
     if (result.action === "add_edge" && result.edge) {
       const edgeItem: EdgeItem = {
-        PK: `NODE#${slug}`, SK: `EDGE#${result.edge.target}`,
+        PK: nodeKey(slug), SK: edgeKey(result.edge.target),
         edge_type: result.edge.edge_type ?? "related", weight: 1.0,
         created_at: now, created_by: "human",
       };
@@ -84,7 +85,7 @@ async function handleChat(event: APIGatewayProxyEvent, body: { slug?: string; me
     }
 
     if (result.action === "set_status" && result.status) {
-      await updateNodeMeta(slug, { status: result.status, GSI2PK: `STATUS#${result.status}` });
+      await updateNodeMeta(slug, { status: result.status, GSI2PK: statusKey(result.status) });
     }
 
     if (result.action === "delete") {
@@ -94,7 +95,7 @@ async function handleChat(event: APIGatewayProxyEvent, body: { slug?: string; me
 
     if (result.action !== "none") {
       const audit: AuditItem = {
-        PK: `AUDIT#${now}`, SK: `NODE#${slug}`,
+        PK: auditKey(now), SK: nodeKey(slug),
         action: "update", actor: "human",
         changes: { chat_action: result.action, message },
         ttl: auditTtl(),
@@ -155,9 +156,9 @@ async function handleCapture(event: APIGatewayProxyEvent): Promise<APIGatewayPro
     // Write META item
     const defaultVisibility = (process.env.DEFAULT_VISIBILITY ?? "private") as "public" | "private";
     const meta: MetaItem = {
-      PK: `NODE#${slug}`,
-      SK: "META",
-      GSI2PK: `STATUS#seed`,
+      PK: nodeKey(slug),
+      SK: META,
+      GSI2PK: statusKey("seed"),
       slug,
       node_type: nodeType,
       status: "seed",
@@ -193,8 +194,8 @@ async function handleCapture(event: APIGatewayProxyEvent): Promise<APIGatewayPro
     // Write edges for suggested cross-references
     for (const target of metadata.concepts) {
       const edge: EdgeItem = {
-        PK: `NODE#${slug}`,
-        SK: `EDGE#${target}`,
+        PK: nodeKey(slug),
+        SK: edgeKey(target),
         edge_type: "related",
         weight: 1.0,
         created_at: now,
@@ -205,8 +206,8 @@ async function handleCapture(event: APIGatewayProxyEvent): Promise<APIGatewayPro
 
     // Audit trail
     const audit: AuditItem = {
-      PK: `AUDIT#${now}`,
-      SK: `NODE#${slug}`,
+      PK: auditKey(now),
+      SK: nodeKey(slug),
       action: "create",
       actor,
       changes: { node_type: nodeType, status: "seed" },
@@ -245,4 +246,4 @@ async function handleCapture(event: APIGatewayProxyEvent): Promise<APIGatewayPro
     console.error("Unhandled error:", JSON.stringify(error));
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: "internal_error", message: "Internal server error" }) };
   }
-};
+}

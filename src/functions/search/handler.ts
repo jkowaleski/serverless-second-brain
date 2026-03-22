@@ -5,6 +5,7 @@ import { ValidationError } from "../../shared/errors.js";
 import { isAuthenticated } from "../../shared/auth.js";
 import { cosine } from "../../shared/math.js";
 import { jsonResponse, errorResponse } from "../../shared/http.js";
+import { fromNodeKey } from "../../shared/keys.js";
 import type { MetaItem, EmbedItem } from "../../shared/types.js";
 
 const KEYWORD_WEIGHT = 0.3;
@@ -46,7 +47,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     // Build embedding lookup
     const embedMap = new Map<string, number[]>();
     for (const e of cachedEmbeddings) {
-      const slug = e.PK.replace("NODE#", "");
+      const slug = fromNodeKey(e.PK);
       embedMap.set(slug, e.vector);
     }
 

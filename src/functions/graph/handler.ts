@@ -4,6 +4,7 @@ import { getBody } from "../../shared/s3.js";
 import { NotFoundError } from "../../shared/errors.js";
 import { isAuthenticated } from "../../shared/auth.js";
 import { jsonResponse, errorResponse } from "../../shared/http.js";
+import { fromNodeKey, fromEdgeKey } from "../../shared/keys.js";
 import type { MetaItem, EdgeItem } from "../../shared/types.js";
 
 // In-memory cache for warm invocations
@@ -22,8 +23,8 @@ async function loadGraph() {
 
 function formatEdge(e: EdgeItem) {
   return {
-    source: e.PK.replace("NODE#", ""),
-    target: e.SK.replace("EDGE#", ""),
+    source: fromNodeKey(e.PK),
+    target: fromEdgeKey(e.SK),
     edge_type: e.edge_type,
     weight: e.weight,
   };
@@ -57,15 +58,15 @@ async function handleGraph(event: APIGatewayProxyEvent): Promise<APIGatewayProxy
 
   const slugSet = new Set(nodes.map((n) => n.slug));
   const edges = graph.edges.filter((e) => {
-    const src = e.PK.replace("NODE#", "");
-    const tgt = e.SK.replace("EDGE#", "");
+    const src = fromNodeKey(e.PK);
+    const tgt = fromEdgeKey(e.SK);
     return slugSet.has(src) && slugSet.has(tgt);
   });
 
   // Count edges per node
   const edgeCounts = new Map<string, number>();
   for (const e of edges) {
-    const src = e.PK.replace("NODE#", "");
+    const src = fromNodeKey(e.PK);
     edgeCounts.set(src, (edgeCounts.get(src) ?? 0) + 1);
   }
 
@@ -92,8 +93,8 @@ async function handleNode(slug: string, authed: boolean, event: APIGatewayProxyE
 
   // Fetch related node summaries via batch
   const relatedSlugs = [
-    ...outbound.map((e) => e.SK.replace("EDGE#", "")),
-    ...inbound.map((e) => e.PK.replace("NODE#", "")),
+    ...outbound.map((e) => fromEdgeKey(e.SK)),
+    ...inbound.map((e) => fromNodeKey(e.PK)),
   ];
   const relatedMeta = await batchGetNodes(relatedSlugs);
   const relatedNodes = relatedMeta.map((rn) => ({ id: rn.slug, title: rn.title, title_es: rn.title_es, title_en: rn.title_en, summary_es: rn.summary_es, summary_en: rn.summary_en, node_type: rn.node_type, status: rn.status }));
@@ -123,7 +124,7 @@ async function handleNode(slug: string, authed: boolean, event: APIGatewayProxyE
       word_count_en: node.word_count_en,
     },
     edges: outbound.map((e) => ({
-      target: e.SK.replace("EDGE#", ""),
+      target: fromEdgeKey(e.SK),
       edge_type: e.edge_type,
       weight: e.weight,
     })),

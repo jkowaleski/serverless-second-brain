@@ -1,6 +1,7 @@
 import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 import { getAllNodes, getAllEdges, getAllEmbeddings } from "../../shared/dynamodb.js";
 import { cosine } from "../../shared/math.js";
+import { fromNodeKey, fromEdgeKey } from "../../shared/keys.js";
 import type { MetaItem, EdgeItem, EmbedItem } from "../../shared/types.js";
 
 const sns = new SNSClient({});
@@ -188,8 +189,8 @@ export const handler = async (event: DigestEvent) => {
   const edgeSet = new Set<string>();
 
   for (const e of edges) {
-    const src = e.PK.replace("NODE#", "");
-    const tgt = e.SK.replace("EDGE#", "");
+    const src = fromNodeKey(e.PK);
+    const tgt = fromEdgeKey(e.SK);
     edgeCounts.set(src, (edgeCounts.get(src) ?? 0) + 1);
     inboundCounts.set(tgt, (inboundCounts.get(tgt) ?? 0) + 1);
     edgeSet.add(`${src}→${tgt}`);
@@ -197,7 +198,7 @@ export const handler = async (event: DigestEvent) => {
 
   const embedMap = new Map<string, number[]>();
   for (const e of embeddings) {
-    embedMap.set(e.PK.replace("NODE#", ""), e.vector);
+    embedMap.set(fromNodeKey(e.PK), e.vector);
   }
 
   // Run all analyzers
