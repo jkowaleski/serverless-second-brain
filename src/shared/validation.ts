@@ -33,6 +33,7 @@ export function validateCaptureRequest(body: unknown): CaptureRequest {
     url: req.url as string | undefined,
     type: (req.type as string) ?? "concept",
     language: (req.language as "es" | "en") ?? "es",
+    visibility: (req.visibility as "public" | "private" | undefined),
   };
 }
 
