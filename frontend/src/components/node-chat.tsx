@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, type ReactNode } from "react";
-import { Send, Loader2, PenLine, Plus, Globe, Link2, ArrowUp, Eye, Lock, Trash2, MessageSquareText } from "lucide-react";
+import { Send, Loader2, PenLine, Plus, Link2, ArrowUp, Eye, Lock, Trash2, MessageSquareText } from "lucide-react";
 import { api } from "@/lib/api";
 import { t, localized as loc } from "@/lib/i18n";
 import type { DictKey } from "@/lib/i18n";
@@ -62,7 +62,7 @@ export function NodeChat({ slug, node, onUpdate }: { slug: string; node?: { stat
   const quickActions: { key: DictKey; icon: ReactNode; prompt: Record<string, string> }[] = [
     { key: "node_chat.q.rewrite", icon: <PenLine className="h-3 w-3" />, prompt: { es: "Reescribe el contenido completo", en: "Rewrite the full content" } },
     { key: "node_chat.q.add_section", icon: <Plus className="h-3 w-3" />, prompt: { es: "Agrega una sección sobre ", en: "Add a section about " } },
-    { key: "node_chat.q.translate", icon: <Globe className="h-3 w-3" />, prompt: { es: "Mejora la traducción al inglés", en: "Improve the Spanish translation" } },
+    { key: "node_chat.q.tags", icon: <Plus className="h-3 w-3" />, prompt: { es: "Sugiere mejores tags", en: "Suggest better tags" } },
     { key: "node_chat.q.connect", icon: <Link2 className="h-3 w-3" />, prompt: { es: "Conecta con nodos relacionados", en: "Connect to related nodes" } },
     ...(node?.status === "seed" ? [{ key: "node_chat.q.promote" as DictKey, icon: <ArrowUp className="h-3 w-3" /> as ReactNode, prompt: { es: "Promueve a growing", en: "Promote to growing" } }] : []),
     ...(node?.visibility === "private" ? [{ key: "node_chat.q.publish" as DictKey, icon: <Eye className="h-3 w-3" /> as ReactNode, prompt: { es: "Hazlo público", en: "Make it public" } }] : [{ key: "node_chat.q.hide" as DictKey, icon: <Lock className="h-3 w-3" /> as ReactNode, prompt: { es: "Hazlo privado", en: "Make it private" } }]),

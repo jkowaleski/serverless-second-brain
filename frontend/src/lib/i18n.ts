@@ -92,7 +92,7 @@ const dict = {
   "node_chat.placeholder": { es: "Reescribe la intro, agrega una sección sobre X, hazlo público...", en: "Rewrite the intro, add a section about X, make it public..." },
   "node_chat.q.rewrite": { es: "Reescribir", en: "Rewrite" },
   "node_chat.q.add_section": { es: "Agregar secci\u00f3n", en: "Add section" },
-  "node_chat.q.translate": { es: "Mejorar traducci\u00f3n", en: "Fix translation" },
+  "node_chat.q.tags": { es: "Mejorar tags", en: "Improve tags" },
   "node_chat.q.connect": { es: "Conectar", en: "Connect" },
   "node_chat.q.promote": { es: "Promover", en: "Promote" },
   "node_chat.q.publish": { es: "Hacer p\u00fablico", en: "Make public" },
