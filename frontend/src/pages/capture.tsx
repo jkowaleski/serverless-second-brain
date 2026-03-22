@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { LogIn, Send, ArrowRight, Globe, Lock, BookOpen } from "lucide-react";
+import { LogIn, Send, ArrowRight, Globe, Lock, Brain, StickyNote, FlaskConical, PenLine } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { usePrefs } from "@/lib/prefs";
 import { api } from "@/lib/api";
 import { t, localized } from "@/lib/i18n";
 import { TypeBadge, StatusBadge, TagList } from "@/components/badges";
+
+const TYPE_ICON: Record<string, typeof Brain> = { concept: Brain, note: StickyNote, experiment: FlaskConical, essay: PenLine };
 
 const pulse = "animate-pulse rounded bg-[var(--color-border)]";
 
@@ -129,10 +131,10 @@ export default function Capture() {
       </div>
 
       {/* Messages — scrollable */}
-      <div className="min-h-0 flex-1 overflow-y-auto space-y-4 rounded-lg border border-[var(--color-border)] p-4">
+      <div className="relative min-h-0 flex-1 overflow-y-auto space-y-4 rounded-lg border border-[var(--color-border)] p-4">
         {messages.length === 0 && (
-          <div className="flex h-full flex-col items-center justify-center gap-3 text-[var(--color-muted)]">
-            <BookOpen className="h-8 w-8 opacity-40" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-[var(--color-muted)]">
+            {(() => { const Icon = TYPE_ICON[nodeType!] ?? Brain; return <Icon className="h-10 w-10 opacity-30" />; })()}
             <p className="text-sm">{t("capture.empty", locale)}</p>
           </div>
         )}
