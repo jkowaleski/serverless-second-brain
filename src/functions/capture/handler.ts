@@ -1,9 +1,8 @@
 /**
- * Monolithic capture handler — DEPRECATED for production use.
+ * Monolithic capture handler — API Gateway Lambda proxy integration.
  *
- * Production flow: API Gateway → Step Functions → step handlers (steps/).
- * This handler is kept for direct Lambda invocation and local testing only.
- * If modifying capture logic, update the step handlers in steps/ instead.
+ * Handles the full capture pipeline: validate → classify → persist → edges.
+ * Step Functions step handlers in steps/ are kept for async/batch use.
  */
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
@@ -13,6 +12,12 @@ import { putBody } from "../../shared/s3.js";
 import { classify } from "../../shared/bedrock.js";
 import { ValidationError, DuplicateError, BedrockError } from "../../shared/errors.js";
 import type { MetaItem, EdgeItem, AuditItem, CaptureResponse } from "../../shared/types.js";
+
+const CORS = {
+  "Access-Control-Allow-Origin": process.env.CORS_ALLOW_ORIGIN ?? "*",
+  "Access-Control-Allow-Headers": "Content-Type,Authorization",
+  "Access-Control-Allow-Methods": "POST,OPTIONS",
+};
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
@@ -105,18 +110,18 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       updated_at: now,
     };
 
-    return { statusCode: 201, body: JSON.stringify(response) };
+    return { statusCode: 201, headers: CORS, body: JSON.stringify(response) };
   } catch (error) {
     if (error instanceof ValidationError) {
-      return { statusCode: 400, body: JSON.stringify({ error: "validation_error", message: error.message }) };
+      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "validation_error", message: error.message }) };
     }
     if (error instanceof DuplicateError) {
-      return { statusCode: 409, body: JSON.stringify({ error: "duplicate_slug", message: error.message }) };
+      return { statusCode: 409, headers: CORS, body: JSON.stringify({ error: "duplicate_slug", message: error.message }) };
     }
     if (error instanceof BedrockError) {
-      return { statusCode: 503, body: JSON.stringify({ error: "bedrock_unavailable", message: error.message }) };
+      return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: "bedrock_unavailable", message: error.message }) };
     }
     console.error("Unhandled error:", JSON.stringify(error));
-    return { statusCode: 500, body: JSON.stringify({ error: "internal_error", message: "Internal server error" }) };
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: "internal_error", message: "Internal server error" }) };
   }
 };

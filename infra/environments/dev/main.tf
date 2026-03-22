@@ -288,7 +288,8 @@ module "api_gateway" {
   source                      = "../../modules/api-gateway"
   api_name                    = "${var.project_name}-${var.environment}-api"
   stage_name                  = var.environment
-  capture_state_machine_arn   = module.capture_pipeline.state_machine_arn
+  capture_lambda_invoke_arn      = module.capture_lambda.invoke_arn
+  capture_lambda_function_name   = module.capture_lambda.function_name
   search_lambda_invoke_arn    = module.search_lambda.invoke_arn
   search_lambda_function_name = module.search_lambda.function_name
   graph_lambda_invoke_arn     = module.graph_lambda.invoke_arn
