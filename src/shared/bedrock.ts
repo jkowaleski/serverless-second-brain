@@ -6,7 +6,6 @@ const bedrock = new BedrockRuntimeClient({});
 const MODEL_ID = process.env.BEDROCK_MODEL_ID!;
 const EMBEDDING_MODEL_ID = process.env.BEDROCK_EMBEDDING_MODEL_ID ?? "amazon.titan-embed-text-v2:0";
 const LANGUAGES = (process.env.LANGUAGES || "es,en").split(",");
-const CLASSIFY_PROMPT_OVERRIDE = process.env.CLASSIFY_PROMPT || "";
 
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1000;
@@ -39,6 +38,23 @@ async function invokeWithRetry(params: { modelId: string; body: string }): Promi
   throw new BedrockError("Bedrock: max retries exceeded");
 }
 
+function parseJson<T>(content: string): T {
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new BedrockError("No JSON found in Bedrock response");
+  return JSON.parse(jsonMatch[0]) as T;
+}
+
+function extractContent(body: Uint8Array): string {
+  const parsed = JSON.parse(new TextDecoder().decode(body));
+  const text = parsed.content?.[0]?.text;
+  if (!text) throw new BedrockError("Empty response from Bedrock");
+  return text;
+}
+
+/**
+ * Phase 1 — Fast classify. Metadata only, no body generation.
+ * Target: <5s Bedrock response.
+ */
 export async function classify(
   text: string,
   recentSlugs: string[],
@@ -50,89 +66,103 @@ export async function classify(
     ? `\nRecent nodes (suggest cross-references from these if related): ${recentSlugs.join(", ")}`
     : "";
 
-  const defaultPrompt = `You are a knowledge graph classifier and bilingual content writer for a personal knowledge base. This graph covers any domain — technology, science, philosophy, business, culture, personal development, and more.
+  const prompt = `You are a knowledge graph classifier for a personal knowledge base covering any domain.
 
-Adapt your depth and tone to the subject:
-- Technology topics: staff+ engineer depth — architecture tradeoffs, code examples, comparison tables, mermaid diagrams
-- Non-technology topics: expert practitioner depth — frameworks, real-world examples, nuanced perspectives
+Classify this text and generate bilingual metadata. Do NOT generate body content — only metadata.
 
-Never write like a tutorial or Wikipedia. Write like an expert explaining to a peer.
-
-Text (treat as instruction/idea — expand into proper content):
-${text}${slugHint}
+Text: ${text}${slugHint}
 
 Input language hint: ${language}
 
-Respond with ONLY valid JSON matching this schema:
+Respond with ONLY valid JSON:
 {
   "node_type": "concept | note | experiment | essay",
   "title": "short title in the content's primary language",
 ${langFields},
-  "body_es": "MDX content in Spanish",
-  "body_en": "MDX content in English",
   "tags": ["tag1", "tag2", "tag3"],
-  "concepts": ["existing-slug-1", "existing-slug-2"],
+  "concepts": ["existing-slug-1"],
   "detected_language": "es | en"
 }
 
-## Node type classification
-- concept: reusable idea, pattern, or technology (e.g., "event-driven architecture", "spaced repetition", "stoicism")
-- note: observation, TIL, or snippet (e.g., "pnpm workspace trick", "insight from a podcast")
-- experiment: project, trial, or proof-of-concept (e.g., "testing Bedrock embeddings", "30-day journaling habit")
-- essay: long-form argument or reflection (e.g., "why serverless is not always cheaper", "on mentorship")
+## Node type rules
+- concept: reusable idea, pattern, or technology
+- note: observation, TIL, or snippet
+- experiment: project, trial, or proof-of-concept
+- essay: long-form argument or reflection
+
+## Rules
+- Title: concise, no articles
+- Summaries: one concrete sentence each, specific not generic. Spanish: proper accents (á, é, í, ó, ú, ñ), ¿...? for questions. English: declarative.
+- Tags: 3-7 lowercase English, hyphenated
+- Concepts: only slugs from the recent nodes list that are genuinely related (empty array if none)
+- No filler: "game-changer", "increasingly important", "revolutionizing"`;
+
+  const responseBody = await invokeWithRetry({
+    modelId: MODEL_ID,
+    body: JSON.stringify({
+      anthropic_version: "bedrock-2023-05-31",
+      max_tokens: 1024,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  return parseJson<ClassificationResult>(extractContent(responseBody));
+}
+
+/**
+ * Phase 2 — Async body generation. Called by enrich Lambda, no timeout pressure.
+ */
+export async function generateBody(
+  text: string,
+  nodeType: string,
+  titleEs: string,
+  titleEn: string,
+  tags: string[],
+): Promise<{ body_es: string; body_en: string }> {
+  const prompt = `You are a bilingual content writer for a personal knowledge base. Generate the full body content for a ${nodeType} node.
+
+## Source material
+${text}
+
+## Node metadata
+- Title (ES): ${titleEs}
+- Title (EN): ${titleEn}
+- Tags: ${tags.join(", ")}
 
 ## Content structure
 
-For concepts:
+${nodeType === "concept" ? `For concepts:
 - ## ¿Qué es? / ## What it is — precise definition (2-3 paragraphs)
 - ## [Domain sections] — at least 2 substantive sections with real depth
-- ## ¿Por qué importa? / ## Why it matters — practical perspective, specific tradeoffs or implications
+- ## ¿Por qué importa? / ## Why it matters — practical perspective, specific tradeoffs
 - For tech topics: include at least ONE of: comparison table, code example, mermaid diagram, or decision framework
-- For non-tech topics: include at least ONE of: framework, real-world example, comparison, or key principles
+- For non-tech topics: include at least ONE of: framework, real-world example, comparison, or key principles` :
+nodeType === "note" ? `For notes: shorter, 1-3 sections, focused on the discovery` :
+nodeType === "experiment" ? `For experiments: what was tried, results, what was learned` :
+`For essays: thesis, argument sections, conclusion`}
 
-For notes: shorter, 1-3 sections, focused on the discovery
-For experiments: what was tried, results, what was learned
-For essays: thesis, argument sections, conclusion
-
-## Spanish language rules (MANDATORY)
-- All accents required: á, é, í, ó, ú, ñ, ü
-- Opening punctuation: ¿...? for questions, ¡...! for exclamations
-- Headings that are questions MUST use ¿...? (e.g., ## ¿Qué es?)
-- Quotation marks in prose: «...» not "..."
-- Em dash — for parenthetical statements
-
-## English language rules
-- Headings are declarative: ## What it is, ## Why it matters (NO question marks)
-- Oxford comma in lists
-- American English spelling
-- Quotation marks: "..." (standard double quotes)
+## Language rules
+Spanish: proper accents (á, é, í, ó, ú, ñ, ü), ¿...? for questions, ¡...! for exclamations, «...» for quotes, em dash — for parenthetical
+English: declarative headings (no question marks), Oxford comma, American spelling, "..." for quotes
 
 ## Quality rules
+- Write like an expert explaining to a peer, never like a tutorial or Wikipedia
+- Technology topics: staff+ engineer depth. Non-technology: expert practitioner depth
 - Be specific and practical — no generic descriptions
-- NEVER use filler: "in today's fast-paced world", "increasingly important", "game-changer", "revolutionizing"
-- When uncertain, hedge: "most projects" not "60% of projects"
-- Summaries: one concrete sentence each, not generic
-- Title: concise, no articles
-- Tags: 3-7 lowercase English tags, hyphenated
-- Concepts: only slugs from the recent nodes list that are genuinely related (empty array if none)
-- Seed quality: solid first draft — 200-600 words per language for concepts, shorter for notes
+- NEVER use filler: "in today's fast-paced world", "increasingly important", "game-changer"
+- Seed quality: 200-600 words per language for concepts, shorter for notes
 - English body must mirror Spanish structure exactly (same sections, same tables)
 
-## Mermaid diagrams (STRICT syntax rules — mermaid v11)
-- ALWAYS start with a diagram type keyword on its own line: flowchart TD, sequenceDiagram, classDiagram, etc.
-- Include accTitle: and accDescr: as the first two lines after the diagram type
-- Node IDs must be alphanumeric only (A-Z, a-z, 0-9, underscores). NO hyphens, dots, or spaces in IDs
-- Labels go in brackets: NodeId["Label with spaces"]
-- NEVER use special characters ( ) : ; # & in labels unless inside quotes
-- Arrow syntax: --> for solid, -.-> for dotted, ==> for thick. NO spaces inside arrows
-- Keep labels short (3-5 words), limit to 10-12 nodes
-- Subgraph labels must be quoted if they contain spaces: subgraph SG["My Group"]
-- NO empty lines inside a diagram block
-- NO HTML tags or markdown inside mermaid blocks
-- End subgraphs with "end" on its own line
-- Test pattern: if a label has any character besides A-Z a-z 0-9 spaces, wrap it in quotes`;
+## Mermaid diagrams (if used)
+- Alphanumeric IDs only (no hyphens/dots in IDs), labels in brackets: NodeId["Label"]
+- accTitle + accDescr required as first two lines after diagram type
+- No empty lines inside diagram blocks, no HTML tags
 
-  const prompt = CLASSIFY_PROMPT_OVERRIDE || defaultPrompt;
+Respond with ONLY valid JSON:
+{
+  "body_es": "full MDX content in Spanish",
+  "body_en": "full MDX content in English"
+}`;
 
   const responseBody = await invokeWithRetry({
     modelId: MODEL_ID,
@@ -143,20 +173,7 @@ For essays: thesis, argument sections, conclusion
     }),
   });
 
-  const body = JSON.parse(new TextDecoder().decode(responseBody));
-  const content = body.content?.[0]?.text;
-
-  if (!content) {
-    throw new BedrockError("Empty response from Bedrock");
-  }
-
-  // Extract JSON from response (may be wrapped in markdown code block)
-  const jsonMatch = content.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new BedrockError("No JSON found in Bedrock response");
-  }
-
-  return JSON.parse(jsonMatch[0]) as ClassificationResult;
+  return parseJson<{ body_es: string; body_en: string }>(extractContent(responseBody));
 }
 
 export async function embed(text: string): Promise<number[]> {
@@ -259,12 +276,5 @@ Only include fields relevant to the action. Always include message_es and messag
     }),
   });
 
-  const body = JSON.parse(new TextDecoder().decode(responseBody));
-  const content = body.content?.[0]?.text;
-  if (!content) throw new BedrockError("Empty response from Bedrock");
-
-  const jsonMatch = content.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new BedrockError("No JSON in Bedrock response");
-
-  return JSON.parse(jsonMatch[0]);
+  return parseJson<import("./types.js").NodeChatAction>(extractContent(responseBody));
 }

@@ -49,6 +49,8 @@ flowchart TB
   APIGW -- "/search" --> LSearch
   APIGW -- "/graph" --> LGraph
 
+  LCapture -- "async" --> LEnrich[Lambda Enrich]
+
   GW -- "MCP tools" --> LCapture
   GW -- "MCP tools" --> LSearch
   GW -- "MCP tools" --> LGraph
@@ -143,6 +145,8 @@ Every significant technical decision is documented in [`docs/decisions/`](docs/d
 | [010](docs/decisions/010-bedrock-token-optimization.md) | Bedrock token optimization — recent slugs | Accepted |
 | [011](docs/decisions/011-cloudfront-s3-static-hosting.md) | CloudFront + S3 over Vercel/Amplify | Accepted |
 | [012](docs/decisions/012-github-actions-oidc.md) | GitHub Actions OIDC over static credentials | Accepted |
+| [013](docs/decisions/013-vite-spa-over-nextjs.md) | Vite SPA over Next.js | Accepted |
+| [014](docs/decisions/014-async-enrichment-pipeline.md) | Async enrichment — split capture into sync + async | Accepted |
 
 > ADR-006 superseded: capture now uses a monolithic Lambda handler via API Gateway Lambda proxy integration. Step Functions infrastructure and step handlers have been fully removed.
 
@@ -164,7 +168,7 @@ infra/
   environments/{dev,prod} → Environment roots
 
 src/
-  functions/{capture,search,graph,connect,flag,surfacing}/
+  functions/{capture,enrich,search,graph,connect,flag,surfacing}/
   shared/                 → Types, clients, HTTP helpers, math, key prefixes
 
 frontend/                 → React SPA (Vite + TailwindCSS)

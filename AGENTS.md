@@ -32,7 +32,8 @@ infra/
 
 src/
   functions/
-    capture/              → POST /capture — ingest + classify with Bedrock
+    capture/              → POST /capture — classify metadata with Bedrock (sync)
+    enrich/               → Async body generation, embedding, edges (ADR-014)
     search/               → GET /search — hybrid keyword + semantic
     graph/                → GET /graph + GET /nodes/{id} — knowledge graph API
     connect/              → POST /connect — create edges between nodes

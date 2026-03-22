@@ -1,9 +1,11 @@
 /**
- * Monolithic capture handler — API Gateway Lambda proxy integration.
+ * Capture handler — API Gateway Lambda proxy integration.
  *
- * Handles the full capture pipeline: validate → classify → persist → edges.
+ * Phase 1 (sync): validate → classify metadata → persist META → return 201
+ * Phase 2 (async): enrich Lambda generates body, embedding, edges
  */
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
 import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import { validateCaptureRequest, generateSlug } from "../../shared/validation.js";
 import { getNode, putNode, putEdge, putAudit, listNodeSlugs, bumpCacheVersion, updateNodeVisibility, updateNodeMeta, deleteNode, getNodeEdges } from "../../shared/dynamodb.js";
@@ -16,6 +18,8 @@ import { nodeKey, edgeKey, auditKey, statusKey, fromEdgeKey, META } from "../../
 import { ValidationError, DuplicateError, BedrockError, NotFoundError } from "../../shared/errors.js";
 import type { MetaItem, EdgeItem, AuditItem, CaptureResponse, NodeChatAction } from "../../shared/types.js";
 
+const lambda = new LambdaClient({});
+const ENRICH_FUNCTION = process.env.ENRICH_FUNCTION_NAME;
 const CORS = corsHeaders("POST,PATCH,OPTIONS");
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
@@ -31,7 +35,6 @@ async function handleChat(event: APIGatewayProxyEvent, body: { slug?: string; me
     const { slug, message, language = "es" } = body;
     if (!slug || !message) throw new ValidationError("slug and message are required");
 
-    // Load full node context
     const node = await getNode(slug);
     if (!node) throw new NotFoundError(`Node '${slug}' not found`);
 
@@ -40,7 +43,6 @@ async function handleChat(event: APIGatewayProxyEvent, body: { slug?: string; me
       getBody(node.node_type, slug, "en").catch(() => ""),
     ]);
 
-    // Get edges
     const edges = await getNodeEdges(slug);
     const edgeSlugs = edges.map((e) => fromEdgeKey(e.SK));
 
@@ -56,7 +58,6 @@ async function handleChat(event: APIGatewayProxyEvent, body: { slug?: string; me
     const result = await nodeChat(message, context, language);
     const now = new Date().toISOString();
 
-    // Execute the action
     if (result.action === "update_body" && result.body_es && result.body_en) {
       await Promise.all([
         putBody(node.node_type, slug, result.body_es, "es"),
@@ -139,6 +140,8 @@ async function handleCapture(event: APIGatewayProxyEvent): Promise<APIGatewayPro
   try {
     const input = validateCaptureRequest(JSON.parse(event.body ?? "{}"));
     const recentSlugs = await listNodeSlugs(20);
+
+    // Phase 1: fast classify — metadata only
     const metadata = await classify(input.text, recentSlugs, input.language ?? "es");
     const slug = generateSlug(metadata.title);
     const now = new Date().toISOString();
@@ -147,13 +150,9 @@ async function handleCapture(event: APIGatewayProxyEvent): Promise<APIGatewayPro
     const nodeType = input.type ?? detectedType;
     const actor = input.actor ?? "human";
 
-    // Check duplicate
     const existing = await getNode(slug);
-    if (existing) {
-      throw new DuplicateError(`Node with slug '${slug}' already exists`);
-    }
+    if (existing) throw new DuplicateError(`Node with slug '${slug}' already exists`);
 
-    // Write META item
     const defaultVisibility = (process.env.DEFAULT_VISIBILITY ?? "private") as "public" | "private";
     const meta: MetaItem = {
       PK: nodeKey(slug),
@@ -172,8 +171,8 @@ async function handleCapture(event: APIGatewayProxyEvent): Promise<APIGatewayPro
       created_at: now,
       updated_at: now,
       created_by: actor,
-      word_count_es: (metadata.body_es || "").split(/\s+/).filter(Boolean).length,
-      word_count_en: (metadata.body_en || "").split(/\s+/).filter(Boolean).length,
+      word_count_es: 0,
+      word_count_en: 0,
     };
 
     try {
@@ -183,25 +182,6 @@ async function handleCapture(event: APIGatewayProxyEvent): Promise<APIGatewayPro
         throw new DuplicateError(`Node with slug '${slug}' already exists`);
       }
       throw err;
-    }
-
-    // Write body to S3 (Bedrock-generated content, both languages)
-    const bodyEs = metadata.body_es || input.text;
-    const bodyEn = metadata.body_en || input.text;
-    await putBody(nodeType, slug, bodyEs, "es");
-    await putBody(nodeType, slug, bodyEn, "en");
-
-    // Write edges for suggested cross-references
-    for (const target of metadata.concepts) {
-      const edge: EdgeItem = {
-        PK: nodeKey(slug),
-        SK: edgeKey(target),
-        edge_type: "related",
-        weight: 1.0,
-        created_at: now,
-        created_by: actor,
-      };
-      await putEdge(edge);
     }
 
     // Audit trail
@@ -215,6 +195,26 @@ async function handleCapture(event: APIGatewayProxyEvent): Promise<APIGatewayPro
     };
     await putAudit(audit);
     await bumpCacheVersion();
+
+    // Phase 2: fire async enrich (body + embedding + edges)
+    if (ENRICH_FUNCTION) {
+      await lambda.send(new InvokeCommand({
+        FunctionName: ENRICH_FUNCTION,
+        InvocationType: "Event",
+        Payload: new TextEncoder().encode(JSON.stringify({
+          slug,
+          text: input.text,
+          node_type: nodeType,
+          title_es: metadata.title_es,
+          title_en: metadata.title_en,
+          summary_es: metadata.summary_es,
+          summary_en: metadata.summary_en,
+          tags: metadata.tags,
+          concepts: metadata.concepts,
+          actor,
+        })),
+      }));
+    }
 
     const response: CaptureResponse = {
       id: slug,

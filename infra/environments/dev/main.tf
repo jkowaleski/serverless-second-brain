@@ -79,9 +79,34 @@ module "capture_lambda" {
   handler               = "index.handler"
   memory_size           = 512
   timeout               = 30
-  environment_variables = local.capture_env
+  environment_variables = merge(local.capture_env, {
+    ENRICH_FUNCTION_NAME = "${var.project_name}-${var.environment}-enrich"
+  })
   policy_arns           = local.capture_policies
   enable_dlq            = true
+}
+
+# Async enrichment — body generation, embedding, edges (ADR-014)
+module "enrich_lambda" {
+  source        = "../../modules/lambda"
+  function_name = "${var.project_name}-${var.environment}-enrich"
+  handler       = "index.handler"
+  memory_size   = 512
+  timeout       = 120
+
+  environment_variables = {
+    TABLE_NAME                 = module.dynamodb.table_name
+    BUCKET_NAME                = module.s3_content.bucket_name
+    BEDROCK_MODEL_ID           = var.bedrock_model_id
+    BEDROCK_EMBEDDING_MODEL_ID = var.bedrock_embedding_model_id
+    ENVIRONMENT                = var.environment
+  }
+
+  policy_arns = [
+    module.iam.dynamodb_write_policy_arn,
+    module.iam.s3_write_policy_arn,
+    module.iam.bedrock_invoke_policy_arn,
+  ]
 }
 
 # Step function handlers — REMOVED: capture uses monolithic Lambda handler now (ADR-006 superseded)
@@ -234,6 +259,20 @@ module "surfacing_lambda" {
   ]
 }
 
+resource "aws_iam_role_policy" "capture_invoke_enrich" {
+  name = "${var.project_name}-${var.environment}-capture-invoke-enrich"
+  role = module.capture_lambda.role_name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "lambda:InvokeFunction"
+      Resource = module.enrich_lambda.function_arn
+    }]
+  })
+}
+
 resource "aws_iam_role_policy" "surfacing_sns" {
   name = "${var.project_name}-${var.environment}-surfacing-sns"
   role = module.surfacing_lambda.role_name
@@ -345,6 +384,7 @@ module "monitoring" {
 
   lambda_function_names = [
     module.capture_lambda.function_name,
+    module.enrich_lambda.function_name,
     module.search_lambda.function_name,
     module.graph_lambda.function_name,
     module.connect_lambda.function_name,

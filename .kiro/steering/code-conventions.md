@@ -29,8 +29,11 @@ src/
     auth.ts           → JWT verification helpers
   functions/
     capture/
-      handler.ts      → Monolithic Lambda entry point (validate → classify → persist → edges)
+      handler.ts      → Sync capture: validate → classify metadata → persist META → invoke enrich async
       index.ts        → Export handler
+    enrich/
+      handler.ts      → Async enrichment: body generation → S3 → embedding → edges
+      index.ts
     search/
       handler.ts      → Lambda entry point
       index.ts
@@ -90,6 +93,7 @@ Lambda functions receive configuration via environment variables:
 | `BEDROCK_MODEL_ID` | Capture | Claude model ID for classification |
 | `BEDROCK_EMBEDDING_MODEL_ID` | Capture, Search | Titan model ID for embeddings |
 | `CORS_ALLOW_ORIGIN` | Search, Graph | CORS allowed origin (dev: `*`, prod: `https://jonmatum.com`) |
+| `ENRICH_FUNCTION_NAME` | Capture | Enrich Lambda function name for async invocation |
 | `SNS_DIGEST_TOPIC_ARN` | Surfacing | SNS topic for daily digest |
 | `ENVIRONMENT` | All | `dev` or `prod` |
 | `DEFAULT_VISIBILITY` | Capture | Default visibility for new nodes (`public` or `private`) |
