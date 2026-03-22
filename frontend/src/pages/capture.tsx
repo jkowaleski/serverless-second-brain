@@ -57,9 +57,9 @@ export default function Capture() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold">{t("capture.title", locale)}</h1>
-        <span className="text-xs text-[var(--color-muted)]">{user.email}</span>
+        <span className="truncate text-xs text-[var(--color-muted)]">{user.email}</span>
       </div>
 
       {result && (
@@ -85,7 +85,7 @@ export default function Capture() {
         <form onSubmit={submit} className="space-y-5">
           <div className="space-y-1.5">
             <label htmlFor="capture-text" className="text-sm font-medium">{t("capture.text_label", locale)}</label>
-            <textarea id="capture-text" value={text} onChange={(e) => setText(e.target.value)} rows={6} disabled={loading}
+            <textarea id="capture-text" value={text} onChange={(e) => setText(e.target.value)} rows={4} disabled={loading}
               className="w-full rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2 text-sm outline-none transition-colors focus:border-[var(--color-accent)] resize-y disabled:opacity-50"
               placeholder={t("capture.text_placeholder", locale)} />
             <div className="flex items-center gap-2">
@@ -102,7 +102,7 @@ export default function Capture() {
               className="w-full rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2 text-sm outline-none transition-colors focus:border-[var(--color-accent)] disabled:opacity-50" />
           </div>
 
-          <div className="flex flex-wrap gap-4">
+          <div className="space-y-4">
             <fieldset className="space-y-1.5" disabled={loading}>
               <legend className="text-sm font-medium">{t("capture.type_label", locale)}</legend>
               <div className="flex flex-wrap gap-1.5" role="radiogroup">
@@ -128,7 +128,7 @@ export default function Capture() {
           </div>
 
           <button type="submit" disabled={!valid || loading}
-            className="inline-flex items-center gap-2 rounded-lg bg-[var(--color-fg)] px-4 py-2 text-sm font-medium text-[var(--color-bg)] transition-opacity hover:opacity-80 disabled:opacity-50">
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-fg)] px-4 py-2.5 text-sm font-medium text-[var(--color-bg)] cursor-pointer transition-opacity hover:opacity-80 disabled:opacity-50 disabled:cursor-default sm:w-auto">
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             {loading ? t("capture.submitting", locale) : t("capture.submit", locale)}
           </button>
