@@ -184,7 +184,7 @@ function ShellInner() {
       <footer className="border-t border-[var(--color-border)]">
         <div className="mx-auto max-w-3xl px-6 py-8">
           <p className="text-center text-xs text-[var(--color-muted)]">
-            © {new Date().getFullYear()} Jonatan Mata · v{__APP_VERSION__}
+            © {new Date().getFullYear()} Serverless Second Brain · v{__APP_VERSION__}
           </p>
         </div>
       </footer>
