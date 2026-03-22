@@ -36,7 +36,8 @@ export function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export function TagList({ tags }: { tags: string[] }) {
+export function TagList({ tags }: { tags?: string[] }) {
+  if (!tags?.length) return null;
   return (
     <>
       {tags.map((tag) => (
