@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { api } from "@/lib/api";
 import type { GraphNode } from "@/lib/types";
 import { NodeCard } from "@/components/node-card";
@@ -58,6 +59,7 @@ export default function Timeline() {
   const [nodes, setNodes] = useState<GraphNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [type, setType] = useState("");
+  const [open, setOpen] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setLoading(true);
@@ -71,6 +73,21 @@ export default function Timeline() {
   }, [nodes, type]);
 
   const months = useMemo(() => groupByMonth(filtered, locale), [filtered, locale]);
+
+  // Default: first day of each month open
+  useEffect(() => {
+    const keys = new Set<string>();
+    for (const m of months) if (m.days[0]) keys.add(m.days[0].key);
+    setOpen(keys);
+  }, [months]);
+
+  const toggle = useCallback((key: string) => {
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -92,24 +109,29 @@ export default function Timeline() {
       ) : (
         <div className="space-y-10">
           {months.map((month) => (
-            <section key={month.key} className="space-y-6">
+            <section key={month.key} className="space-y-4">
               <div>
                 <h2 className="text-lg font-semibold">{month.label}</h2>
                 <CountPills counts={month.counts} locale={locale} />
               </div>
               {month.days.map((day) => (
-                <div key={day.key} className="space-y-2">
-                  <div className="flex items-center gap-3">
+                <div key={day.key}>
+                  <button onClick={() => toggle(day.key)} className="flex w-full items-center gap-2 py-1 text-left">
+                    {open.has(day.key)
+                      ? <ChevronDown className="h-4 w-4 shrink-0 text-[var(--color-muted)]" />
+                      : <ChevronRight className="h-4 w-4 shrink-0 text-[var(--color-muted)]" />}
                     <span className="text-sm font-medium text-[var(--color-muted)]">{day.label}</span>
                     <CountPills counts={day.counts} locale={locale} />
-                  </div>
-                  <ul className="space-y-2">
-                    {day.items.map((n) => (
-                      <li key={n.id}>
-                        <NodeCard id={n.id} title={localized(n, "title", locale)} summary={localized(n, "summary", locale) || undefined} node_type={n.node_type} status={n.status} tags={n.tags} />
-                      </li>
-                    ))}
-                  </ul>
+                  </button>
+                  {open.has(day.key) && (
+                    <ul className="mt-2 space-y-2">
+                      {day.items.map((n) => (
+                        <li key={n.id}>
+                          <NodeCard id={n.id} title={localized(n, "title", locale)} summary={localized(n, "summary", locale) || undefined} node_type={n.node_type} status={n.status} tags={n.tags} />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               ))}
             </section>
