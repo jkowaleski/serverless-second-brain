@@ -118,9 +118,19 @@ For essays: thesis, argument sections, conclusion
 - Seed quality: solid first draft — 200-600 words per language for concepts, shorter for notes
 - English body must mirror Spanish structure exactly (same sections, same tables)
 
-## Mermaid diagrams (when they add value)
-- Include accTitle: and accDescr: for accessibility
-- Keep labels short (3-5 words), limit to 10-12 nodes`;
+## Mermaid diagrams (STRICT syntax rules — mermaid v11)
+- ALWAYS start with a diagram type keyword on its own line: flowchart TD, sequenceDiagram, classDiagram, etc.
+- Include accTitle: and accDescr: as the first two lines after the diagram type
+- Node IDs must be alphanumeric only (A-Z, a-z, 0-9, underscores). NO hyphens, dots, or spaces in IDs
+- Labels go in brackets: NodeId["Label with spaces"]
+- NEVER use special characters ( ) : ; # & in labels unless inside quotes
+- Arrow syntax: --> for solid, -.-> for dotted, ==> for thick. NO spaces inside arrows
+- Keep labels short (3-5 words), limit to 10-12 nodes
+- Subgraph labels must be quoted if they contain spaces: subgraph SG["My Group"]
+- NO empty lines inside a diagram block
+- NO HTML tags or markdown inside mermaid blocks
+- End subgraphs with "end" on its own line
+- Test pattern: if a label has any character besides A-Z a-z 0-9 spaces, wrap it in quotes`;
 
   const prompt = CLASSIFY_PROMPT_OVERRIDE || defaultPrompt;
 
