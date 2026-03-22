@@ -103,21 +103,28 @@ export default function Capture() {
           </div>
 
           <div className="flex flex-wrap gap-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">{t("capture.type_label", locale)}</label>
-              <select value={type} onChange={(e) => setType(e.target.value)} disabled={loading}
-                className="rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2 text-sm outline-none disabled:opacity-50">
-                {TYPES.map((tp) => <option key={tp} value={tp}>{t(`type.${tp}` as Parameters<typeof t>[0], locale)}</option>)}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">{t("capture.lang_label", locale)}</label>
-              <select value={lang} onChange={(e) => setLang(e.target.value as "es" | "en")} disabled={loading}
-                className="rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2 text-sm outline-none disabled:opacity-50">
-                <option value="es">ES</option>
-                <option value="en">EN</option>
-              </select>
-            </div>
+            <fieldset className="space-y-1.5" disabled={loading}>
+              <legend className="text-sm font-medium">{t("capture.type_label", locale)}</legend>
+              <div className="flex flex-wrap gap-1.5" role="radiogroup">
+                {TYPES.map((tp) => (
+                  <button key={tp} type="button" role="radio" aria-checked={type === tp} onClick={() => setType(tp)}
+                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors ${type === tp ? "border-[var(--color-fg)] bg-[var(--color-fg)] text-[var(--color-bg)]" : "border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-muted)] hover:text-[var(--color-fg)]"}`}>
+                    {t(`type.${tp}` as Parameters<typeof t>[0], locale)}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <fieldset className="space-y-1.5" disabled={loading}>
+              <legend className="text-sm font-medium">{t("capture.lang_label", locale)}</legend>
+              <div className="flex gap-1.5" role="radiogroup">
+                {(["es", "en"] as const).map((l) => (
+                  <button key={l} type="button" role="radio" aria-checked={lang === l} onClick={() => setLang(l)}
+                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium uppercase cursor-pointer transition-colors ${lang === l ? "border-[var(--color-fg)] bg-[var(--color-fg)] text-[var(--color-bg)]" : "border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-muted)] hover:text-[var(--color-fg)]"}`}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
           </div>
 
           <button type="submit" disabled={!valid || loading}
