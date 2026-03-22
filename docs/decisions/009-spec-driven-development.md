@@ -41,7 +41,7 @@ The project started from an essay that described the architecture in prose. Befo
 | `dynamodb-schema.md` | Single-table design, item types, GSIs, validation rules |
 | `api-spec.md` | REST endpoints, request/response schemas, error codes |
 | `mcp-tools.md` | MCP tool definitions, JSON Schema inputs, write safety |
-| `event-schemas.md` | Step Functions states, EventBridge rules, SNS messages |
+| `event-schemas.md` | EventBridge rules, SNS messages |
 | `terraform-conventions.md` | Naming, modules, state, security, domain config |
 | `code-conventions.md` | TypeScript rules, Lambda patterns, error handling |
 

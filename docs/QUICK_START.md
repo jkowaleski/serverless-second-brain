@@ -50,7 +50,7 @@ terraform init
 terraform apply
 ```
 
-This creates: DynamoDB table, S3 buckets, Lambda functions, API Gateway, Step Functions, EventBridge schedule, SNS topic, CloudWatch dashboard.
+This creates: DynamoDB table, S3 buckets, Lambda functions, API Gateway, EventBridge schedule, SNS topic, CloudWatch dashboard.
 
 ## 4. Build and deploy Lambda code
 

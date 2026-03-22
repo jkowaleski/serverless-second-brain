@@ -22,7 +22,7 @@ This file defines the exact contract for all REST API endpoints. All Lambda hand
 
 ### POST /capture
 
-Creates a new knowledge node. Triggers the Step Functions capture pipeline.
+Creates a new knowledge node. Bedrock classifies the input, generates bilingual content, and persists to DynamoDB + S3.
 
 **Request**:
 ```json

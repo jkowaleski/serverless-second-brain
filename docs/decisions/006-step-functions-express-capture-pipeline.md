@@ -1,8 +1,8 @@
 # ADR-006: Step Functions Express Workflow for Capture Pipeline
 
-**Status**: Accepted
+**Status**: Superseded
 **Date**: 2026-03-21
-**Context**: Issue #5, `.kiro/steering/event-schemas.md`, benchmark results (Benchmark 3)
+**Superseded**: 2026-03-22 — Capture reverted to monolithic Lambda handler. SFN infrastructure and step handlers fully removed. See [context](#superseded-context).
 
 ## Decision
 
@@ -80,3 +80,19 @@ The capture pipeline has 4 sequential steps with different failure modes: input 
 - [Step Functions Express vs Standard](https://docs.aws.amazon.com/step-functions/latest/dg/concepts-standard-vs-express.html) — AWS, 2024
 - [Benchmark results](../benchmarks/results.md) — Benchmark 3 (throttle cascade)
 - `.kiro/steering/event-schemas.md` — ASL state definitions
+
+## Superseded context
+
+**Date**: 2026-03-22
+
+The capture pipeline was reverted to a monolithic Lambda handler (Option 1) and the Step Functions infrastructure was fully removed:
+
+- 4 SFN step Lambda functions destroyed
+- State machine destroyed
+- SFN CloudWatch alarm removed
+- SFN dashboard widget removed
+- Step handler source files (`src/functions/capture/steps/`) deleted
+
+**Why**: The monolithic handler proved simpler to operate. Bedrock throttling was resolved by switching to a cross-region inference profile (`us.anthropic.claude-sonnet-4-20250514-v1:0`), eliminating the primary justification for granular retry. The 30-second Lambda timeout is sufficient now that Bedrock responds in 3–8 seconds consistently. The VTL response mapping complexity and retry cascade bugs (commits `be31ad0`, `031b012`) added operational burden without proportional benefit.
+
+**What remains**: The ADR is preserved as a record of the decision and lessons learned. If batch/async capture is needed in the future, consider SQS + Lambda (Option 4) rather than re-introducing Step Functions.

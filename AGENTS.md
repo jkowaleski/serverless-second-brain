@@ -16,7 +16,7 @@ All contracts are defined in `.kiro/steering/` — read these before writing any
 | `dynamodb-schema.md` | Single-table design, item types (META, EDGE, EMBED, AUDIT), GSIs, access patterns |
 | `api-spec.md` | REST endpoints — request/response schemas, error codes, auth, rate limits |
 | `mcp-tools.md` | MCP tool definitions — JSON Schema inputs, tool→Lambda mapping, write safety rules |
-| `event-schemas.md` | Step Functions states, EventBridge rules, SNS message contracts, retry policies |
+| `event-schemas.md` | EventBridge rules, SNS message contracts, retry policies |
 | `terraform-conventions.md` | Naming, module interfaces, state management, security rules, domain config |
 | `code-conventions.md` | TypeScript patterns, Lambda handler structure, error handling, commit conventions |
 
@@ -35,11 +35,13 @@ src/
     capture/              → POST /capture — ingest + classify with Bedrock
     search/               → GET /search — hybrid keyword + semantic
     graph/                → GET /graph + GET /nodes/{id} — knowledge graph API
+    connect/              → POST /connect — create edges between nodes
+    flag/                 → POST /flag — flag nodes for review
     surfacing/            → Daily digest via EventBridge + SNS
   runtime/                → Python MCP server for AgentCore Runtime
-  shared/                 → Shared types, DynamoDB client, error handling, Bedrock client
+  shared/                 → Types, clients, HTTP helpers, math, key prefixes
 
-frontend/                 → Static Next.js export for CloudFront + S3
+frontend/                 → React SPA (Vite + TailwindCSS) for CloudFront + S3
 
 scripts/
   smoke-test.sh           → 13-check end-to-end validation
@@ -98,7 +100,7 @@ Real data at 178 nodes: [`docs/benchmarks/results.md`](docs/benchmarks/results.m
 ## Dependency chain
 
 ```
-#1 Foundation → #2 DynamoDB/S3 → #3 Capture Lambda → #4 API Gateway → #5 Step Functions → #11 Migration
+#1 Foundation → #2 DynamoDB/S3 → #3 Capture Lambda → #4 API Gateway → #11 Migration
   → #6 Search, #7 Graph, #10 CloudFront (Phase 2)
   → #8 AgentCore, #15 MCP Safety (Phase 3)
   → #9 Surfacing (Phase 4)

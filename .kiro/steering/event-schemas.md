@@ -4,87 +4,9 @@ inclusion: always
 
 # Event Schemas — Async Flows
 
-This file defines the exact schemas for all asynchronous events in the system: EventBridge events, SNS messages, and Step Functions state transitions.
+This file defines the exact schemas for all asynchronous events in the system: EventBridge events and SNS messages.
 
-## Step Functions — Capture pipeline
-
-### Input (from API Gateway)
-
-```json
-{
-  "text": "string",
-  "url": "string | null",
-  "type": "string",
-  "language": "es | en",
-  "request_id": "uuid"
-}
-```
-
-### State transitions
-
-```
-ValidateInput → GenerateMetadata → PersistNode → CreateEdges → NotifySuccess
-```
-
-Note: `ComputeEmbeddings` step is deferred to Phase 2 (Search Lambda, #6). The pipeline will be extended to include it between GenerateMetadata and PersistNode once Bedrock Titan embedding infrastructure exists.
-
-Each state passes its output as input to the next. Intermediate payloads:
-
-**ValidateInput → GenerateMetadata**:
-```json
-{
-  "input": {
-    "text": "...",
-    "url": "...",
-    "type": "concept",
-    "language": "es"
-  },
-  "existingSlugs": ["aws-lambda", "serverless", "..."]
-}
-```
-
-**GenerateMetadata → PersistNode**:
-```json
-{
-  "input": { "text": "...", "type": "concept", "language": "es" },
-  "metadata": {
-    "title": "Serverless",
-    "title_es": "Serverless",
-    "title_en": "Serverless",
-    "summary_es": "...",
-    "summary_en": "...",
-    "tags": ["aws", "lambda"],
-    "concepts": ["aws-lambda"]
-  },
-  "slug": "serverless"
-}
-```
-
-**PersistNode → CreateEdges**:
-```json
-{
-  "input": { "text": "...", "type": "concept", "language": "es" },
-  "metadata": { "..." },
-  "slug": "serverless",
-  "now": "2026-03-19T10:30:00Z"
-}
-```
-
-### Retry policy
-
-- GenerateMetadata: retry 3 times, backoff 2s/4s/8s, on `BedrockError`
-- PersistNode: retry 2 times, backoff 1s/2s, on `States.TaskFailed`
-
-### Error output
-
-```json
-{
-  "error": "StepFailed",
-  "step": "GenerateMetadata",
-  "cause": "ThrottlingException: Rate exceeded",
-  "request_id": "uuid"
-}
-```
+> **Note**: Step Functions were removed in the DRY cleanup (2026-03-22). The capture pipeline now runs as a monolithic Lambda handler. See [ADR-006](../../docs/decisions/006-step-functions-express-capture-pipeline.md) for history.
 
 ## EventBridge — Surfacing schedule
 
@@ -112,7 +34,7 @@ Each state passes its output as input to the next. Intermediate payloads:
 ### Topic: Capture complete
 
 - Name: `{project_name}-{env}-capture-complete`
-- Published by: Step Functions NotifySuccess state
+- Published by: Capture Lambda (on successful node creation)
 
 The message wraps the full pipeline output (CaptureResponse) under `detail`:
 

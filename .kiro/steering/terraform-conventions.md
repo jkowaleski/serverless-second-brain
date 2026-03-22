@@ -22,7 +22,6 @@ infra/
     s3/                    → Content bucket + frontend bucket
     lambda/                → Reusable Lambda function module
     api-gateway/           → REST API + routes + stages
-    step-functions/        → State machine definitions
     eventbridge/           → Scheduler rules
     sns/                   → Topics + subscriptions
     cloudfront/            → Distribution + OAC + headers

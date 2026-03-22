@@ -37,7 +37,6 @@ No layer may bypass another. Interface never talks directly to Memory.
 | Lambda Search | Hybrid keyword + semantic search | Reads DynamoDB + Bedrock Titan |
 | Lambda Graph | Build and serve knowledge graph JSON | Reads DynamoDB, caches in memory |
 | Lambda Surfacing | Daily analysis of graph health | Triggered by EventBridge, writes to SNS |
-| Step Functions | Orchestrate multi-step capture pipeline | Express Workflow for sync, Standard for async |
 | EventBridge | Schedule daily surfacing cron | `cron(0 8 * * ? *)` |
 | Bedrock Claude | Classification, metadata generation, agent reasoning | `us.anthropic.claude-sonnet-4-20250514-v1:0` |
 | Bedrock Titan | Embeddings (1,024 dimensions) | `amazon.titan-embed-text-v2:0` |
@@ -49,7 +48,7 @@ No layer may bypass another. Interface never talks directly to Memory.
 |---|---|---|
 | API Gateway REST | Human door — SPA and external clients | Throttling, Cognito JWT for writes, CORS |
 | AgentCore Gateway | Agent door — MCP tools | OAuth, semantic discovery, protocol translation |
-| CloudFront + S3 | Static frontend (Next.js export) | OAC, security headers, cache policies |
+| CloudFront + S3 | Static frontend (React SPA) | OAC, security headers, cache policies |
 
 ## Two doors
 
@@ -74,7 +73,7 @@ If a design decision increases idle cost above $1/mo, it requires an ADR in `doc
 
 Each phase is independently deployable and adds value without requiring subsequent phases.
 
-- **Phase 1**: Capture API (Lambda + API Gateway + DynamoDB + S3 + Step Functions)
+- **Phase 1**: Capture API (Lambda + API Gateway + DynamoDB + S3 + Cognito)
 - **Phase 2**: Search + Graph + Frontend (Search Lambda + Graph Lambda + CloudFront)
 - **Phase 3**: Agent door (AgentCore Gateway + Runtime + MCP tools)
 - **Phase 4**: Proactive surfacing (EventBridge + Surfacing Lambda + SNS)
@@ -116,4 +115,3 @@ For observability comparison (issue #14):
 | Bedrock (embeddings) | $0.00 | ~$0.50 | ~$2.00 |
 | Bedrock (chat/agent) | $0.00 | ~$1.00 | ~$5.00 |
 | EventBridge + SNS | ~$0.01 | ~$0.01 | ~$0.01 |
-| Step Functions | $0.00 | ~$0.03 | ~$0.25 |

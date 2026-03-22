@@ -144,7 +144,7 @@ Every significant technical decision is documented in [`docs/decisions/`](docs/d
 | [011](docs/decisions/011-cloudfront-s3-static-hosting.md) | CloudFront + S3 over Vercel/Amplify | Accepted |
 | [012](docs/decisions/012-github-actions-oidc.md) | GitHub Actions OIDC over static credentials | Accepted |
 
-> ADR-006 superseded: capture now uses a monolithic Lambda handler via API Gateway Lambda proxy integration instead of Step Functions Express sync. SFN step handlers are retained for future async/batch use.
+> ADR-006 superseded: capture now uses a monolithic Lambda handler via API Gateway Lambda proxy integration. Step Functions infrastructure and step handlers have been fully removed.
 
 ## Prerequisites
 
@@ -164,10 +164,10 @@ infra/
   environments/{dev,prod} → Environment roots
 
 src/
-  functions/{capture,search,graph,surfacing}/
-  shared/                 → Types, clients, error handling
+  functions/{capture,search,graph,connect,flag,surfacing}/
+  shared/                 → Types, clients, HTTP helpers, math, key prefixes
 
-frontend/                 → Static Next.js export
+frontend/                 → React SPA (Vite + TailwindCSS)
 
 scripts/                  → Migration, benchmarks, utilities
 docs/decisions/           → ADRs
@@ -184,7 +184,7 @@ All contracts defined before code — [Spec-Driven Development](https://jonmatum
 - [`dynamodb-schema.md`](.kiro/steering/dynamodb-schema.md) — single-table design, item types, GSIs
 - [`api-spec.md`](.kiro/steering/api-spec.md) — REST endpoints, schemas, error codes
 - [`mcp-tools.md`](.kiro/steering/mcp-tools.md) — MCP tool definitions, write safety rules
-- [`event-schemas.md`](.kiro/steering/event-schemas.md) — Step Functions, EventBridge, SNS contracts
+- [`event-schemas.md`](.kiro/steering/event-schemas.md) — EventBridge, SNS contracts
 - [`terraform-conventions.md`](.kiro/steering/terraform-conventions.md) — naming, modules, state, security
 - [`code-conventions.md`](.kiro/steering/code-conventions.md) — TypeScript, Lambda patterns, commits
 

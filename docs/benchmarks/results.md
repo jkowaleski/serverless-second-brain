@@ -129,9 +129,9 @@ Search has the same scan problem but is less severe because it can use GSI2 to f
 
 1. **High input token count**: 6,764 tokens/invocation. The classify prompt includes all existing slugs for duplicate avoidance (~178 slugs × ~30 chars). At 10,000 nodes this would be ~300K tokens/invocation.
 
-2. **Retry amplification**: The Step Functions retry bug (fixed in `031b012`) caused 2.2x invocations (157 classify calls for 70 captures). Each retry re-invoked Bedrock.
+2. **Retry amplification**: The Step Functions retry bug (fixed in `031b012`) caused 2.2x invocations (157 classify calls for 70 captures). Each retry re-invoked Bedrock. *(Note: Step Functions fully removed 2026-03-22 — capture now uses monolithic Lambda handler.)*
 
-3. **Throttle cascade**: 89.6% throttle rate. Each throttle triggered a Step Functions retry, which re-invoked Bedrock, which throttled again. Vicious cycle.
+3. **Throttle cascade**: 89.6% throttle rate. Each throttle triggered a Step Functions retry, which re-invoked Bedrock, which throttled again. Vicious cycle. *(Resolved by switching to cross-region inference profile and removing SFN.)*
 
 4. **Development burst**: 823 invocations in 7 days is not normal usage — it's development + testing + smoke tests + migration.
 
@@ -151,6 +151,7 @@ Search has the same scan problem but is less severe because it can use GSI2 to f
 |---|---|---|---|---|
 | 2026-03-21 | `031b012` | — | Step Functions: only retry `BedrockError`, not `States.TaskFailed` | Eliminates retry cascade on `DuplicateError`. Reduces classify invocations from 2.2x to 1x. Fixes capture 504 timeout. |
 | 2026-03-21 | `2b68b49` | #19 | Classify prompt: 20 recent slugs instead of all slugs | ~78% input token reduction (6,764 → ~1,500 tokens/invocation). Projected savings: ~$12/week at development rate. |
+| 2026-03-22 | `36bf83a` | — | Remove Step Functions entirely, revert to monolithic Lambda handler | Eliminates SFN cost (~$0.03–$0.25/mo), removes retry cascade risk, simplifies deployment. Cross-region inference profile resolved Bedrock throttling. |
 
 ### Projected cost after improvements
 
