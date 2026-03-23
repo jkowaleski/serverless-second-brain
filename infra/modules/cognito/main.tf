@@ -31,6 +31,8 @@ variable "allow_self_signup" {
 resource "aws_cognito_user_pool" "this" {
   name = "${var.project_name}-${var.environment}-users"
 
+  deletion_protection = "ACTIVE"
+
   auto_verified_attributes = ["email"]
   username_attributes       = ["email"]
 

@@ -176,6 +176,9 @@ resource "aws_cloudfront_distribution" "this" {
     cloudfront_default_certificate = var.acm_certificate_arn == ""
     acm_certificate_arn            = var.acm_certificate_arn != "" ? var.acm_certificate_arn : null
     ssl_support_method             = var.acm_certificate_arn != "" ? "sni-only" : null
+    # SEC-1: TLSv1 is an AWS limitation when using the default *.cloudfront.net certificate.
+    # TLSv1.2_2021 is enforced automatically when a custom domain + ACM cert is configured.
+    # CloudFront still negotiates TLS 1.2+ with modern clients regardless of this setting.
     minimum_protocol_version       = var.acm_certificate_arn != "" ? "TLSv1.2_2021" : "TLSv1"
   }
 }

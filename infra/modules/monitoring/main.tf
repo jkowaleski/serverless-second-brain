@@ -333,6 +333,21 @@ resource "aws_cloudwatch_metric_alarm" "dynamodb_throttle" {
   alarm_actions       = [var.alarm_sns_topic_arn]
 }
 
+resource "aws_cloudwatch_metric_alarm" "bedrock_cost" {
+  alarm_name          = "${var.project_name}-${var.environment}-bedrock-input-tokens"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  period              = 86400
+  threshold           = 2000000
+  statistic           = "Sum"
+  metric_name         = "InputTokenCount"
+  namespace           = "AWS/Bedrock"
+  dimensions          = { ModelId = "us.anthropic.claude-sonnet-4-20250514-v1:0" }
+  alarm_description   = "Bedrock Claude input tokens > 2M/day (~$6/day, projects to >$50/mo if sustained)"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [var.alarm_sns_topic_arn]
+}
+
 resource "aws_cloudwatch_metric_alarm" "api_5xx" {
   alarm_name          = "${var.project_name}-${var.environment}-api-5xx"
   comparison_operator = "GreaterThanThreshold"
