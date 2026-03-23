@@ -108,7 +108,7 @@ Real data at 178 nodes: [`docs/benchmarks/results.md`](docs/benchmarks/results.m
   → #12 Benchmarks, #13 Domain Config, #14 Observability (cross-cutting)
 ```
 
-All issues above are closed. Also closed: #17 (OAuth/Cognito — Phases A-C), #22 (Frontend scaffold), #23 (Knowledge graph UI), #25 (Remove API key infra). Open: #18 (Reasoning agent), #20 (Graph S3 snapshot), #21 (Bedrock throttle monitoring), #24 (Cognito login + capture form — Phase D).
+All issues above are closed. Also closed: #17 (OAuth/Cognito — Phases A-C), #21 (Bedrock throttle monitoring), #22 (Frontend scaffold), #23 (Knowledge graph UI), #24 (Cognito login + capture form), #25 (Remove API key infra), #26 (ADR-003 implementation tracking). Open: #18 (Reasoning agent), #20 (Graph S3 snapshot), #28 (Well-Architected remediation — Phases 1-2 done), #29 (Content growth pipeline), #30 (Node chat preview), #31 (Multi-turn capture).
 
 ## Code conventions
 
