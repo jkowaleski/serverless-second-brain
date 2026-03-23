@@ -7,6 +7,7 @@ import { ContentMeta } from "@/components/badges";
 import { MarkdownBody } from "@/components/markdown-body";
 import { NodeDetailSkeleton } from "@/components/skeletons";
 import { NodeChat } from "@/components/node-chat";
+import { ReadAloud } from "@/components/read-aloud";
 import { t, localized, typeLabel } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
 import { useAuth } from "@/lib/auth";
@@ -44,13 +45,18 @@ export default function NodePage() {
   const { node, edges, related, body } = data;
   const section = TYPE_TO_SECTION[node.node_type] ?? "concepts";
 
+  const readableText = body || `${localized(node, "summary", locale)}`;
+
   return (
     <article className="space-y-8">
-      {/* Back link to section */}
-      <Link to={`/${section}`} className="inline-flex items-center gap-1 text-sm text-[var(--color-muted)] transition-colors hover:text-[var(--color-fg)]">
-        <ArrowLeft className="h-4 w-4" />
-        {typeLabel(node.node_type, locale)}s
-      </Link>
+      {/* Back link + read aloud */}
+      <div className="flex items-center justify-between">
+        <Link to={`/${section}`} className="inline-flex items-center gap-1 text-sm text-[var(--color-muted)] transition-colors hover:text-[var(--color-fg)]">
+          <ArrowLeft className="h-4 w-4" />
+          {typeLabel(node.node_type, locale)}s
+        </Link>
+        <ReadAloud text={readableText} locale={locale} />
+      </div>
 
       {/* Header */}
       <header>

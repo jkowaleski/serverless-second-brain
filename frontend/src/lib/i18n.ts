@@ -153,6 +153,12 @@ const dict = {
   "auth.no_account": { es: "\u00bfNo tienes cuenta?", en: "Don\u0027t have an account?" },
   "auth.has_account": { es: "\u00bfYa tienes cuenta?", en: "Already have an account?" },
 
+  // Read aloud
+  "read_aloud.listen": { es: "Escuchar", en: "Listen" },
+  "read_aloud.pause": { es: "Pausar", en: "Pause" },
+  "read_aloud.resume": { es: "Continuar", en: "Resume" },
+  "read_aloud.stop": { es: "Detener", en: "Stop" },
+
   // Tags
   "tags.title": { es: "Tags", en: "Tags" },
   "tags.desc": { es: "Todos los tags del grafo de conocimiento.", en: "All tags in the knowledge graph." },
