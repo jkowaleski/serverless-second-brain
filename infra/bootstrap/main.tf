@@ -138,7 +138,10 @@ resource "aws_iam_role_policy" "github_actions" {
           "sagemaker:*",
           "ssm:*",
           "cognito-idp:*",
-          "cloudwatch:*"        ]
+          "cloudwatch:*",
+          "sqs:*",
+          "wafv2:*"
+        ]
         Resource = "*"
       },
       {
