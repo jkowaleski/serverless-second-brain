@@ -1,206 +1,269 @@
 # Benchmark Results — Serverless Second Brain
 
-**Date**: 2026-03-21
-**Graph size**: 178 nodes, 105 edges, ~1,212 total DynamoDB items
+**Date**: 2026-03-22 (updated)
+**Previous benchmark**: 2026-03-21 (178 nodes, pre-async split)
+**Graph size**: 0 nodes (purged for testing), infrastructure at full scale
 **Region**: us-east-1
 **Issue**: [#12](https://github.com/jonmatum/serverless-second-brain/issues/12)
 
+## Architecture changes since last benchmark
+
+| Change | Impact |
+|---|---|
+| Step Functions removed entirely | No SFN cost, no retry cascade |
+| Async enrichment (ADR-014) | Capture returns in <5s, body generated async |
+| Cross-region inference profile | Bedrock throttling resolved |
+| 20 recent slugs (not all) | ~78% input token reduction |
+| `keys.ts` wired everywhere | No functional impact, code quality |
+
+## 30-Day Real Usage (2026-02-21 to 2026-03-22)
+
+### Lambda invocations
+
+| Function | Invocations | Avg duration | Max duration | Errors | Memory |
+|---|---|---|---|---|---|
+| capture | 91 | 10,892ms | 30,000ms | 12 | 512 MB |
+| enrich | 17 | 19,533ms | 26,438ms | 2 | 512 MB |
+| graph | 1 | 394ms | 1,446ms | 0 | 256 MB |
+| search | 126 | 964ms | 9,391ms | 0 | 512 MB |
+| connect | 25 | 532ms | 693ms | 0 | 256 MB |
+| flag | 25 | 450ms | 597ms | 0 | 256 MB |
+| surfacing | 18 | 2,566ms | 2,778ms | 0 | 512 MB |
+| authorizer | 85 | 272ms | 878ms | 1 | 256 MB |
+
+Notes:
+- Capture avg includes pre-async-split runs (monolithic handler doing classify + body + embed). Post-split, classify-only should be ~3-5s.
+- Enrich avg 19.5s is expected — body generation (4096 tokens) + S3 write + embedding + edge creation.
+- Capture errors (12) include development testing, validation errors, and Bedrock throttles before cross-region fix.
+
+### Bedrock LLM utilization
+
+#### Claude Sonnet 4
+
+| Metric | 30-day value |
+|---|---|
+| Invocations | 943 |
+| Input tokens | 5,703,160 (6,048 avg/call) |
+| Output tokens | 466,906 (495 avg/call) |
+| Avg latency | 6,936ms |
+| Max latency | 49,322ms |
+| Input cost | $17.11 |
+| Output cost | $7.00 |
+| **Total** | **$24.11** |
+
+Invocation breakdown (estimated):
+
+| Operation | Calls | Avg input | Avg output | Cost/call | Subtotal |
+|---|---|---|---|---|---|
+| Classify (capture) | 91 | ~2,000 | ~500 | $0.014 | $1.23 |
+| Body gen (enrich) | 17 | ~1,000 | ~3,000 | $0.048 | $0.82 |
+| Node chat + testing | 835 | ~6,500 | ~400 | $0.026 | $21.29 |
+
+Node chat dominates cost because it includes the full node body as context (~4-8K tokens input per call). The 835 calls include heavy development/testing — normal usage would be much lower.
+
+#### Titan Embed V2
+
+| Metric | 30-day value |
+|---|---|
+| Invocations | 281 |
+| Input tokens | 14,532 (52 avg/call) |
+| Avg latency | 134ms |
+| Max latency | 7,128ms |
+| **Total cost** | **$0.0003** |
+
+Embedding cost is negligible — $0.000001 per call.
+
+### DynamoDB
+
+| Metric | 30-day value |
+|---|---|
+| Read capacity units consumed | 32,850 |
+| Write capacity units consumed | 7,212 |
+| Table items (at peak) | ~1,200 |
+| Table size (at peak) | 108 KB |
+| Estimated cost (post free-tier) | $0.011 |
+
+### API Gateway
+
+| Metric | 30-day value |
+|---|---|
+| Total requests | 3,390 |
+| 4XX errors | 268 (7.9%) |
+| 5XX errors | 88 (2.6%) |
+| Avg latency | 1,551ms |
+
+4XX errors are mostly auth failures during development. 5XX errors correlate with Bedrock throttles (pre cross-region fix).
+
+### CloudFront
+
+| Metric | 30-day value |
+|---|---|
+| Requests | 3,754 |
+| Data transferred | 28.6 MB |
+
+### S3 storage
+
+| Bucket | Objects | Size |
+|---|---|---|
+| ssb-dev-content | 28 | < 1 MB |
+| ssb-dev-frontend | 395 | 12.4 MB |
+
+### Cognito
+
+| Metric | Value |
+|---|---|
+| Users | 4 |
+| Cost | $0.00 (free tier: 50K MAU) |
+
+## Actual cost (30 days)
+
+| Service | Cost | Notes |
+|---|---|---|
+| Bedrock Claude Sonnet 4 | $24.11 | 943 invocations (heavy dev/testing) |
+| Bedrock Titan Embed V2 | $0.00 | 281 invocations |
+| Lambda | $0.00 | Free tier (320/400K GB-s used) |
+| API Gateway | $0.00 | Free tier (3.4K/1M calls) |
+| DynamoDB | $0.00 | Free tier (25 RCU/WCU) |
+| S3 | $0.00 | Free tier (5 GB) |
+| CloudFront | $0.00 | Free tier (1 TB) |
+| CloudWatch | $0.00 | Free tier (10 metrics) |
+| Cognito | $0.00 | Free tier (50K MAU) |
+| **Total** | **$24.11** | **99.99% is Bedrock** |
+
+## Per-operation cost
+
+| Operation | Claude in | Claude out | Titan | Total |
+|---|---|---|---|---|
+| Capture (classify meta) | ~2,000 | ~500 | — | $0.014 |
+| Enrich (body + embed) | ~1,000 | ~3,000 | ~50 | $0.048 |
+| Full capture pipeline | ~3,000 | ~3,500 | ~50 | $0.062 |
+| Node chat edit | ~6,500 | ~400 | — | $0.026 |
+| Search (semantic) | — | — | ~20 | $0.000 |
+| Graph read | — | — | — | $0.000 |
+
+## Projected monthly cost by usage level
+
+| Load | Captures/day | Searches/day | Bedrock | Infra | Total |
+|---|---|---|---|---|---|
+| Idle (0 req/day) | 0 | 0 | $0.00 | $0.00* | $0.00* |
+| Light (5 req/day) | 5 | 10 | $9.30 | $0.00* | $9.30 |
+| Moderate (20 req/day) | 20 | 50 | $37.20 | $0.03 | $37.23 |
+| Heavy (100 req/day) | 100 | 200 | $186.00 | $0.15 | $186.15 |
+
+*Free tier covers all infrastructure at low usage. Bedrock has no free tier.
+
+### Essay estimate vs. actual (revised)
+
+| Load level | Original essay | Previous benchmark | Current (post-improvements) |
+|---|---|---|---|
+| Idle | $0.51/mo | $0.00 | $0.00 |
+| Moderate (100 req/day) | $2.44/mo | $93.82/mo (dev burst) | ~$186/mo |
+| High (1,000 req/day) | $11.21/mo | — | ~$1,860/mo |
+
+The original essay underestimated Bedrock costs by ~17x. The essay assumed $0.003/classify — actual is $0.062/capture (classify + body generation). The async split (ADR-014) didn't reduce cost, it improved UX by making capture feel instant.
+
+## Optimization opportunities
+
+### 1. Switch to Claude Haiku for classify ($0.014 → ~$0.001)
+
+Classify only generates metadata (title, summary, tags, slug). This doesn't need Sonnet-level reasoning. Haiku 3.5 at $0.25/1M input, $1.25/1M output would reduce classify cost by ~93%.
+
+| Model | Cost/classify | Cost/month (20/day) |
+|---|---|---|
+| Sonnet 4 (current) | $0.014 | $8.40 |
+| Haiku 3.5 | $0.001 | $0.60 |
+
+### 2. Reduce node chat context
+
+Node chat sends the full body as context (~4-8K tokens). Options:
+- Send only summary + tags for simple operations (status, visibility, delete)
+- Truncate body to first 2K tokens for content edits
+- Estimated savings: 50-70% on node chat input tokens
+
+### 3. Cache Titan embeddings for repeated searches
+
+Same query within a TTL window doesn't need re-embedding. Simple in-memory cache in Lambda would eliminate redundant Titan calls (already negligible cost, but reduces latency).
+
+## Improvements applied (cumulative)
+
+| Date | Change | Impact |
+|---|---|---|
+| 2026-03-21 | SFN retry fix (`031b012`) | Eliminated retry cascade |
+| 2026-03-21 | 20 recent slugs (`2b68b49`, #19) | ~78% input token reduction for classify |
+| 2026-03-22 | Remove SFN entirely | No SFN cost, simpler deployment |
+| 2026-03-22 | Async enrichment (ADR-014) | Capture <5s UX, body generated async |
+| 2026-03-22 | Cross-region inference | Bedrock throttling resolved |
+
 ## Benchmark 1: DynamoDB Single-Table Graph Performance
 
-### Methodology
-
-10 warm requests per endpoint from a local client (Monterrey, MX → us-east-1). Latency includes network round-trip (~200ms baseline) + API Gateway + Lambda + DynamoDB.
-
-### Results at 178 nodes
+*(Unchanged from 2026-03-21 — 178 nodes)*
 
 | Endpoint | avg | p50 | p95 | min | max |
 |---|---|---|---|---|---|
-| GET /nodes/{id} (single read) | 344ms | 343ms | 351ms | 329ms | 351ms |
-| GET /graph (full scan) | 488ms | 489ms | 491ms | 483ms | 491ms |
+| GET /nodes/{id} | 344ms | 343ms | 351ms | 329ms | 351ms |
+| GET /graph | 488ms | 489ms | 491ms | 483ms | 491ms |
 | GET /search?q=serverless | 450ms | 429ms | 502ms | 408ms | 557ms |
 | GET /nodes/404 | 313ms | 308ms | 316ms | 300ms | 341ms |
 
-### Analysis
-
-- **Single node read**: ~150ms server-side (344ms - ~200ms network). DynamoDB `GetItem` is O(1) — this won't degrade with scale.
-- **Full graph scan**: ~290ms server-side. Scans all 1,212 items. This is the bottleneck that will degrade at scale.
-- **Search**: ~250ms server-side. Includes Bedrock Titan embedding (87ms avg) + DynamoDB scan + in-memory cosine similarity. The scan portion will degrade.
-- **404**: ~110ms server-side. Single `GetItem` returning empty — fastest possible path.
-
 ### Projected scaling limits
-
-The full graph scan (`GET /graph`) reads every item in the table. DynamoDB scan throughput is ~128KB/page with pagination.
 
 | Nodes | Est. items | Est. scan time | Practical? |
 |---|---|---|---|
-| 178 (current) | 1,212 | ~290ms | ✅ |
-| 1,000 | ~7,000 | ~1.5s | ✅ Acceptable |
-| 10,000 | ~70,000 | ~15s | ⚠️ Lambda timeout risk |
-| 100,000 | ~700,000 | ~150s | ❌ Impractical |
+| 178 | 1,212 | ~290ms | ✅ |
+| 1,000 | ~7,000 | ~1.5s | ✅ |
+| 5,000 | ~35,000 | ~7s | ⚠️ |
+| 10,000 | ~70,000 | ~15s | ❌ Lambda timeout |
 
-**Recommendation**: At ~5,000 nodes, replace the full graph scan with:
-1. Paginated API (`GET /graph?cursor=X&limit=100`)
-2. Pre-computed graph snapshot in S3 (updated on write via DynamoDB Streams)
-3. GSI2 queries for filtered views (by status, type)
-
-Search has the same scan problem but is less severe because it can use GSI2 to filter by status/type before the cosine similarity pass.
+**Crossover point**: ~5,000 nodes → paginated API or S3 snapshot.
 
 ## Benchmark 2: Semantic Search Comparison
 
-### Current design: DynamoDB scan + in-memory cosine similarity
+*(Decision unchanged — stay with DynamoDB until ~5,000 nodes)*
 
-- **How it works**: Embed query via Titan → scan all EMBED items → compute cosine similarity in Lambda → rank and return top-K
-- **Latency**: 450ms at 178 nodes (87ms embedding + ~160ms scan + ~3ms similarity)
-- **Cost at rest**: $0.00 (PAY_PER_REQUEST)
-- **Cost per query**: ~$0.000014 (Titan embedding) + DynamoDB RCU
-
-### Alternative: OpenSearch Serverless with k-NN
-
-- **How it works**: Embed query → k-NN search in OpenSearch → return top-K
-- **Expected latency**: ~100-200ms (k-NN is O(log n) vs O(n) scan)
-- **Cost at rest**: ~$350/month minimum (2 OCUs × $0.24/hr × 730hrs)
-- **Cost per query**: ~$0.000014 (embedding) + negligible OCU
-
-### Alternative: Aurora Serverless v2 with pgvector
-
-- **How it works**: Embed query → `ORDER BY embedding <=> query LIMIT K` in PostgreSQL
-- **Expected latency**: ~50-150ms with IVFFlat index
-- **Cost at rest**: ~$43/month minimum (0.5 ACU × $0.12/hr × 730hrs)
-- **Cost per query**: ~$0.000014 (embedding) + negligible ACU
-
-### Decision framework
-
-| Scale | Best choice | Why |
+| Scale | Best choice | Idle cost |
 |---|---|---|
-| < 5,000 nodes | DynamoDB (current) | $0 at rest, acceptable latency, simplest architecture |
-| 5,000–50,000 | Aurora pgvector | $43/mo minimum but O(log n) search, SQL familiarity |
-| > 50,000 | OpenSearch Serverless | Purpose-built for vector search, best latency at scale |
+| < 5,000 nodes | DynamoDB scan (current) | $0.00 |
+| 5,000–50,000 | Aurora pgvector | ~$43/mo |
+| > 50,000 | OpenSearch Serverless | ~$350/mo |
 
-**Current decision**: Stay with DynamoDB. At 178 nodes, search latency is 450ms — well within acceptable range. The $0 idle cost aligns with the project's cost constraint. Revisit when approaching 5,000 nodes.
+## Free tier utilization (March 2026)
 
-## Benchmark 3: Bedrock Costs in Production
-
-### 7-day usage (2026-03-14 to 2026-03-21)
-
-#### Claude Sonnet 4 (classification)
-
-| Metric | Value |
-|---|---|
-| Invocations | 823 |
-| Input tokens | 5,567,136 (avg 6,764/invocation) |
-| Output tokens | 345,826 (avg 420/invocation) |
-| Avg latency | 5,962ms |
-| Min latency | 971ms |
-| Max latency | 49,322ms |
-| Throttle events | 7,094 (89.6% throttle rate) |
-| Input cost | $16.70 |
-| Output cost | $5.19 |
-| **Total 7-day** | **$21.89** |
-| **Per invocation** | **$0.0266** |
-
-#### Titan Embed v2 (search embeddings)
-
-| Metric | Value |
-|---|---|
-| Invocations | 176 |
-| Input tokens | 12,513 (avg 71/invocation) |
-| Avg latency | 87ms |
-| Min/Max latency | 48ms / 183ms |
-| **Total 7-day** | **$0.0025** |
-| **Per invocation** | **$0.0000142** |
-
-#### Total Bedrock cost
-
-| Period | Cost |
-|---|---|
-| 7 days (actual) | $21.89 |
-| 30 days (projected) | $93.82 |
-
-### Essay estimate vs. actual
-
-| Load level | Essay estimate | Actual (7-day extrapolated) |
-|---|---|---|
-| Idle | $0.00 | $0.00 ✅ |
-| Moderate (100 req/day) | $1.50/mo | — |
-| High (1,000 req/day) | $7.00/mo | — |
-| Development burst (823 classifies/week) | — | $93.82/mo ❌ |
-
-### Why actual is higher than estimated
-
-1. **High input token count**: 6,764 tokens/invocation. The classify prompt includes all existing slugs for duplicate avoidance (~178 slugs × ~30 chars). At 10,000 nodes this would be ~300K tokens/invocation.
-
-2. **Retry amplification**: The Step Functions retry bug (fixed in `031b012`) caused 2.2x invocations (157 classify calls for 70 captures). Each retry re-invoked Bedrock. *(Note: Step Functions fully removed 2026-03-22 — capture now uses monolithic Lambda handler.)*
-
-3. **Throttle cascade**: 89.6% throttle rate. Each throttle triggered a Step Functions retry, which re-invoked Bedrock, which throttled again. Vicious cycle. *(Resolved by switching to cross-region inference profile and removing SFN.)*
-
-4. **Development burst**: 823 invocations in 7 days is not normal usage — it's development + testing + smoke tests + migration.
-
-### Recommendations
-
-1. ~~**Reduce input tokens**: Pass only the last 50 slugs (most recent) instead of all slugs. Or use a Bloom filter for duplicate detection instead of passing the full list.~~ **Done** — `2b68b49` (#19). Validate step no longer fetches all slugs. Classify fetches 20 recent slugs for cross-reference hints only. Estimated reduction: 6,764 → ~1,500 tokens/invocation (~78%).
-
-2. **Cache embeddings**: Search queries that repeat within a TTL window don't need re-embedding. Add a simple in-memory or DynamoDB cache.
-
-3. ~~**Monitor throttling**: The `031b012` fix (only retry `BedrockError`, not `States.TaskFailed`) should eliminate the retry cascade. Monitor throttle rate over the next week.~~ **Tracking** in #21.
-
-4. **Request quota increase**: If sustained usage exceeds the default Bedrock quota, request an increase via AWS Service Quotas.
-
-## Improvements applied
-
-| Date | Commit | Issue | Change | Impact |
-|---|---|---|---|---|
-| 2026-03-21 | `031b012` | — | Step Functions: only retry `BedrockError`, not `States.TaskFailed` | Eliminates retry cascade on `DuplicateError`. Reduces classify invocations from 2.2x to 1x. Fixes capture 504 timeout. |
-| 2026-03-21 | `2b68b49` | #19 | Classify prompt: 20 recent slugs instead of all slugs | ~78% input token reduction (6,764 → ~1,500 tokens/invocation). Projected savings: ~$12/week at development rate. |
-| 2026-03-22 | `36bf83a` | — | Remove Step Functions entirely, revert to monolithic Lambda handler | Eliminates SFN cost (~$0.03–$0.25/mo), removes retry cascade risk, simplifies deployment. Cross-region inference profile resolved Bedrock throttling. |
-
-### Projected cost after improvements
-
-| Factor | Before | After | Savings |
+| Service | Used | Free tier limit | % used |
 |---|---|---|---|
-| Input tokens/classify | 6,764 | ~1,500 | -78% |
-| Classify invocations (per capture) | 2.2x (retries) | 1x | -55% |
-| Cost per capture | $0.027 | ~$0.005 | -81% |
-| Projected 30-day (dev burst) | $93.82 | ~$18 | -81% |
+| Lambda GB-seconds | 320 | 400,000 | 0.08% |
+| Lambda requests | 1,930 | 1,000,000 | 0.19% |
+| X-Ray traces | 1,357 | 100,000 | 1.36% |
+| CloudWatch alarms | 0.68 | 10 | 6.8% |
+| KMS requests | 989 | 20,000 | 4.9% |
 
-## Lambda Performance
-
-| Function | Invocations (7d) | Avg duration | Memory |
-|---|---|---|---|
-| capture-validate | 70 | 165ms | 256 MB |
-| capture-classify | 157 | 1,630ms | 512 MB |
-| capture-persist | 19 | 510ms | 256 MB |
-| capture-edges | 19 | 411ms | 256 MB |
-| search | 40 | 766ms | 512 MB |
-| graph | 117 | 204ms | 256 MB |
-| connect | 15 | 538ms | 256 MB |
-| flag | 15 | 447ms | 256 MB |
-| surfacing | 7 | 2,444ms | 512 MB |
-
-### DynamoDB consumed capacity (7 days)
-
-| Metric | Value | Est. cost |
-|---|---|---|
-| Read capacity units | 7,155 | $0.0018 |
-| Write capacity units | 2,990 | $0.0037 |
-| **Total** | | **$0.0055** |
-
-DynamoDB cost is negligible — $0.02/month projected.
+Infrastructure is at <1% of free tier limits. Bedrock is the only cost driver.
 
 ## Reproducibility
 
 ```bash
-# Run DynamoDB latency benchmark
-./scripts/benchmark-dynamodb.sh
-
-# Run full smoke test (generates metrics)
-./scripts/smoke-test.sh
-
-# Query Bedrock costs (last 7 days)
+# Query Bedrock token usage (30 days)
 aws cloudwatch get-metric-statistics \
   --namespace AWS/Bedrock --metric-name InputTokenCount \
   --dimensions Name=ModelId,Value=us.anthropic.claude-sonnet-4-20250514-v1:0 \
-  --start-time $(date -u -v-7d +%Y-%m-%dT%H:%M:%SZ) \
+  --start-time $(date -u -v-30d +%Y-%m-%dT%H:%M:%SZ) \
   --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
-  --period 604800 --statistics Sum Average \
+  --period 2592000 --statistics Sum \
   --region us-east-1
+
+# Query Lambda invocations
+for fn in capture enrich graph search connect flag surfacing authorizer; do
+  aws cloudwatch get-metric-statistics \
+    --namespace AWS/Lambda --metric-name Invocations \
+    --dimensions Name=FunctionName,Value=ssb-dev-$fn \
+    --start-time $(date -u -v-30d +%Y-%m-%dT%H:%M:%SZ) \
+    --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+    --period 2592000 --statistics Sum \
+    --region us-east-1
+done
+
+# AWS Cost Explorer
+aws ce get-cost-and-usage \
+  --time-period Start=$(date -u -v-30d +%Y-%m-%d),End=$(date -u +%Y-%m-%d) \
+  --granularity MONTHLY --metrics UnblendedCost \
+  --group-by Type=DIMENSION,Key=SERVICE
 ```
