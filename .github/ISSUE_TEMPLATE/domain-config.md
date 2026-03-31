@@ -14,7 +14,6 @@ What knowledge domain is this for? (e.g., legal, medical, research)
 project_name = ""
 node_types   = []
 edge_types   = []
-languages    = ""
 
 surfacing_stale_days           =
 surfacing_min_edges            =

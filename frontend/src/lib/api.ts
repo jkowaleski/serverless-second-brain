@@ -42,14 +42,13 @@ export const api = {
     if (params?.status) q.set("status", params.status);
     return get<SearchResponse>(`/search?${q}`, token);
   },
-  node: (slug: string, opts?: { include_body?: boolean; language?: string }, token?: string | null) => {
+  node: (slug: string, opts?: { include_body?: boolean }, token?: string | null) => {
     const q = new URLSearchParams();
     if (opts?.include_body) q.set("include_body", "true");
-    if (opts?.language) q.set("language", opts.language);
     const qs = q.toString();
     return get<NodeResponse>(`/nodes/${slug}${qs ? `?${qs}` : ""}`, token);
   },
-  capture: async (body: { text: string; url?: string; type?: string; visibility?: string; language?: string }, token: string) => {
+  capture: async (body: { text: string; url?: string; type?: string; visibility?: string }, token: string) => {
     return request(`${API}/capture`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
@@ -63,11 +62,11 @@ export const api = {
       body: JSON.stringify({ slug, visibility }),
     });
   },
-  nodeChat: async (slug: string, message: string, language: string, token: string) => {
-    return request<{ action: string; message_es: string; message_en: string; [key: string]: unknown }>(`${API}/capture`, {
+  nodeChat: async (slug: string, message: string, token: string) => {
+    return request<{ action: string; message: string; [key: string]: unknown }>(`${API}/capture`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-      body: JSON.stringify({ action: "chat", slug, message, language }),
+      body: JSON.stringify({ action: "chat", slug, message }),
     });
   },
 };

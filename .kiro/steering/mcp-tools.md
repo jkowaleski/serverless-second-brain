@@ -33,8 +33,7 @@ Read a single knowledge node with its metadata, edges, and related nodes.
     "type": "object",
     "properties": {
       "slug": { "type": "string", "description": "Node slug (e.g., 'serverless', 'aws-lambda')" },
-      "include_body": { "type": "boolean", "default": false, "description": "Include full MDX body content from S3" },
-      "language": { "type": "string", "enum": ["es", "en"], "default": "es", "description": "Language for body content" }
+      "include_body": { "type": "boolean", "default": false, "description": "Include full MDX body content from S3" }
     },
     "required": ["slug"]
   }
@@ -91,14 +90,13 @@ Create a new knowledge node. The node starts as `seed` status — human review r
 ```json
 {
   "name": "add_node",
-  "description": "Create a new knowledge node from text. AI classifies the content, generates bilingual metadata, suggests tags and cross-references. Node starts as 'seed' status.",
+  "description": "Create a new knowledge node from text. AI classifies the content, generates metadata, suggests tags and cross-references. Node starts as 'seed' status.",
   "inputSchema": {
     "type": "object",
     "properties": {
       "text": { "type": "string", "minLength": 10, "description": "Content text to create a node from" },
       "url": { "type": "string", "format": "uri", "description": "Optional source URL" },
-      "type": { "type": "string", "default": "concept", "description": "Node type" },
-      "language": { "type": "string", "enum": ["es", "en"], "default": "es" }
+      "type": { "type": "string", "default": "concept", "description": "Node type" }
     },
     "required": ["text"]
   }
@@ -161,7 +159,7 @@ All write tools (`add_node`, `connect_nodes`, `flag_stale`) MUST:
 The AgentCore Runtime agent uses this system prompt:
 
 ```
-You are a knowledge graph assistant for a personal second brain. You help navigate, search, and extend a bilingual (Spanish/English) knowledge graph focused on software engineering, cloud architecture, and AI.
+You are a knowledge graph assistant for a personal second brain. You help navigate, search, and extend a knowledge graph focused on software engineering, cloud architecture, and AI.
 
 Your capabilities:
 - Read and search the knowledge graph
@@ -174,5 +172,4 @@ Rules:
 - Always suggest cross-references when creating nodes
 - Prefer internal knowledge graph links over external URLs when a concept exists
 - Be specific and technical — this is a staff+ engineering knowledge base
-- Respond in the language the user uses (Spanish or English)
 ```

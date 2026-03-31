@@ -14,7 +14,7 @@ const dict = {
 
   // Home
   "home.title": { es: "Second Brain", en: "Second Brain" },
-  "home.subtitle": { es: "Grafo de conocimiento personal \u2014 serverless, biling\u00fce, con b\u00fasqueda sem\u00e1ntica y puerta para agentes de IA.", en: "Personal knowledge graph \u2014 serverless, bilingual, with semantic search and AI agent gateway." },
+  "home.subtitle": { es: "Grafo de conocimiento personal \u2014 serverless, con b\u00fasqueda sem\u00e1ntica y puerta para agentes de IA.", en: "Personal knowledge graph \u2014 serverless, with semantic search and AI agent gateway." },
   "home.tagline": { es: "captura \u2192 clasifica \u2192 conecta \u2192 descubre", en: "capture \u2192 classify \u2192 connect \u2192 discover" },
   "home.dashboard": { es: "Dashboard", en: "Dashboard" },
   "home.dashboard.desc": { es: "Estad\u00edsticas y salud del grafo", en: "Graph stats and health" },
@@ -80,8 +80,6 @@ const dict = {
 
   // Node detail
   "node.back": { es: "\u2190 Grafo", en: "\u2190 Graph" },
-  "node.summary_es": { es: "Resumen (ES)", en: "Summary (ES)" },
-  "node.summary_en": { es: "Resumen (EN)", en: "Summary (EN)" },
   "node.related": { es: "Nodos relacionados ({count})", en: "Related nodes ({count})" },
   "node.words": { es: "{count} palabras", en: "{count} words" },
   "node.empty": { es: "No se especific\u00f3 un nodo.", en: "No node specified." },
@@ -200,10 +198,9 @@ export function t(key: DictKey, locale: Locale, vars?: Record<string, string | n
   );
 }
 
-/** Get the localized title/summary from API data based on locale */
-export function localized(item: { title_es?: string; title_en?: string; summary_es?: string; summary_en?: string; title?: string }, field: "title" | "summary", locale: Locale): string {
-  const key = `${field}_${locale}` as keyof typeof item;
-  return (item[key] as string) ?? (item as Record<string, string>)[field] ?? "";
+/** Get the title/summary from API data */
+export function localized(item: { title?: string; summary?: string }, field: "title" | "summary", _locale?: Locale): string {
+  return (item as Record<string, string>)[field] ?? "";
 }
 
 /** Get type label */

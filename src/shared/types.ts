@@ -9,16 +9,12 @@ export interface MetaItem {
   status: "seed" | "growing" | "evergreen";
   visibility: "public" | "private";
   title: string;
-  title_es: string;
-  title_en: string;
-  summary_es: string;
-  summary_en: string;
+  summary: string;
   tags: string[];
   created_at: string;
   updated_at: string;
   created_by: string;
-  word_count_es?: number;
-  word_count_en?: number;
+  word_count?: number;
 }
 
 export interface EdgeItem {
@@ -55,7 +51,6 @@ export interface CaptureRequest {
   text: string;
   url?: string;
   type?: string;
-  language?: "es" | "en";
   visibility?: "public" | "private";
   actor?: string;
 }
@@ -66,10 +61,7 @@ export interface CaptureResponse {
   node_type: string;
   status: "seed";
   title: string;
-  title_es: string;
-  title_en: string;
-  summary_es: string;
-  summary_en: string;
+  summary: string;
   tags: string[];
   concepts: string[];
   created_at: string;
@@ -79,26 +71,19 @@ export interface CaptureResponse {
 // Bedrock classification output
 export interface ClassificationResult {
   node_type?: string;
-  detected_language?: string;
   title: string;
-  title_es: string;
-  title_en: string;
-  summary_es: string;
-  summary_en: string;
-  body_es: string;
-  body_en: string;
+  summary: string;
+  body: string;
   tags: string[];
   concepts: string[];
 }
 
 export interface NodeChatAction {
   action: "update_body" | "update_meta" | "add_edge" | "set_visibility" | "set_status" | "delete" | "none";
-  body_es?: string;
-  body_en?: string;
-  meta?: Partial<{ title: string; title_es: string; title_en: string; summary_es: string; summary_en: string; tags: string[] }>;
+  body?: string;
+  meta?: Partial<{ title: string; summary: string; tags: string[] }>;
   edge?: { target: string; edge_type?: string };
   visibility?: "public" | "private";
   status?: "seed" | "growing" | "evergreen";
-  message_es: string;
-  message_en: string;
+  message: string;
 }

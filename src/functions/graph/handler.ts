@@ -34,10 +34,7 @@ function formatNode(n: MetaItem) {
   return {
     id: n.slug,
     title: n.title,
-    title_es: n.title_es,
-    title_en: n.title_en,
-    summary_es: n.summary_es,
-    summary_en: n.summary_en,
+    summary: n.summary,
     node_type: n.node_type,
     status: n.status,
     tags: n.tags,
@@ -87,7 +84,6 @@ async function handleNode(slug: string, authed: boolean, event: APIGatewayProxyE
   if (!authed && node.visibility === "private") throw new NotFoundError(`Node '${slug}' not found`);
 
   const includeBody = event.queryStringParameters?.include_body === "true";
-  const language = (event.queryStringParameters?.language === "en" ? "en" : "es") as "es" | "en";
 
   const [outbound, inbound] = await Promise.all([getNodeEdges(slug), getInboundEdges(slug)]);
 
@@ -97,31 +93,25 @@ async function handleNode(slug: string, authed: boolean, event: APIGatewayProxyE
     ...inbound.map((e) => fromNodeKey(e.PK)),
   ];
   const relatedMeta = await batchGetNodes(relatedSlugs);
-  const relatedNodes = relatedMeta.map((rn) => ({ id: rn.slug, title: rn.title, title_es: rn.title_es, title_en: rn.title_en, summary_es: rn.summary_es, summary_en: rn.summary_en, node_type: rn.node_type, status: rn.status }));
+  const relatedNodes = relatedMeta.map((rn) => ({ id: rn.slug, title: rn.title, summary: rn.summary, node_type: rn.node_type, status: rn.status }));
 
   // Optionally fetch body from S3
   let body: string | null = null;
   if (includeBody) {
-    body = await getBody(node.node_type, slug, language);
-    // Fallback to Spanish if English not available
-    if (!body && language === "en") body = await getBody(node.node_type, slug, "es");
+    body = await getBody(node.node_type, slug);
   }
 
   return jsonResponse(200, {
     node: {
       id: node.slug,
       title: node.title,
-      title_es: node.title_es,
-      title_en: node.title_en,
-      summary_es: node.summary_es,
-      summary_en: node.summary_en,
+      summary: node.summary,
       node_type: node.node_type,
       status: node.status,
       tags: node.tags,
       created_at: node.created_at,
       updated_at: node.updated_at,
-      word_count_es: node.word_count_es,
-      word_count_en: node.word_count_en,
+      word_count: node.word_count,
     },
     edges: outbound.map((e) => ({
       target: fromEdgeKey(e.SK),

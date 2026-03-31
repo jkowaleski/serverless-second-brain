@@ -38,10 +38,7 @@ const s3 = new S3Client({ region: REGION });
 interface ContentMeta {
   type: string;
   title: string;
-  title_es?: string;
-  title_en?: string;
-  summary_es: string;
-  summary_en: string;
+  summary: string;
   concepts: string[];
   status: string;
   tags: string[];
@@ -54,7 +51,6 @@ interface ContentNode {
   slug: string;
   meta: ContentMeta;
   body: string;
-  body_en?: string;
 }
 
 async function parseContent(contentDir: string): Promise<ContentNode[]> {
@@ -63,14 +59,12 @@ async function parseContent(contentDir: string): Promise<ContentNode[]> {
     const raw = fs.readFileSync(path.join(contentDir, file), "utf-8");
     const { data, content } = matter(raw);
     const slug = file.replace(/\.mdx$/, "").replace(/\//g, "-");
-    const enPath = path.join(contentDir, file.replace(/\.mdx$/, ".en.mdx"));
-    const body_en = fs.existsSync(enPath) ? matter(fs.readFileSync(enPath, "utf-8")).content : undefined;
-    return { id: slug, slug, meta: data as ContentMeta, body: content, body_en };
+    return { id: slug, slug, meta: data as ContentMeta, body: content };
   });
 }
 
 async function writeNode(node: ContentNode): Promise<{ written: boolean; edges: number }> {
-  const { slug, meta, body, body_en } = node;
+  const { slug, meta, body } = node;
   const nodeType = meta.type ?? "concept";
 
   // META item
@@ -82,16 +76,12 @@ async function writeNode(node: ContentNode): Promise<{ written: boolean; edges: 
     node_type: nodeType,
     status: meta.status,
     title: meta.title,
-    title_es: meta.title_es ?? meta.title,
-    title_en: meta.title_en ?? meta.title,
-    summary_es: meta.summary_es,
-    summary_en: meta.summary_en,
+    summary: meta.summary,
     tags: meta.tags ?? [],
     created_at: new Date(meta.created).toISOString(),
     updated_at: new Date(meta.updated).toISOString(),
     created_by: "migration",
-    word_count_es: body.split(/\s+/).length,
-    word_count_en: body_en ? body_en.split(/\s+/).length : 0,
+    word_count: body.split(/\s+/).length,
   };
 
   if (DRY_RUN) {
@@ -115,7 +105,7 @@ async function writeNode(node: ContentNode): Promise<{ written: boolean; edges: 
     throw err;
   }
 
-  // S3 body uploads
+  // S3 body upload
   if (!SKIP_S3) {
     await s3.send(new PutObjectCommand({
       Bucket: BUCKET_NAME,
@@ -123,14 +113,6 @@ async function writeNode(node: ContentNode): Promise<{ written: boolean; edges: 
       Body: body,
       ContentType: "text/markdown",
     }));
-    if (body_en) {
-      await s3.send(new PutObjectCommand({
-        Bucket: BUCKET_NAME,
-        Key: `content/${nodeType}/${slug}/body.en.mdx`,
-        Body: body_en,
-        ContentType: "text/markdown",
-      }));
-    }
   }
 
   // Edge items

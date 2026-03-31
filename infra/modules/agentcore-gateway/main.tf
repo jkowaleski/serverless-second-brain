@@ -71,7 +71,7 @@ resource "aws_bedrockagentcore_gateway" "this" {
 
   protocol_configuration {
     mcp {
-      instructions       = "MCP Gateway for a personal knowledge graph. Tools provide read, search, write, and audit capabilities over a bilingual (Spanish/English) knowledge base."
+      instructions       = "MCP Gateway for a personal knowledge graph. Tools provide read, search, write, and audit capabilities over a knowledge base."
       supported_versions = ["2025-03-26"]
     }
   }

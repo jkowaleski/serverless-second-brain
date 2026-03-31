@@ -6,7 +6,6 @@ environment  = "dev"
 
 node_types = ["sentencia", "ley", "contrato", "opinion", "doctrina"]
 edge_types = ["cita", "contradice", "amplia", "deroga", "aplica"]
-languages  = "es"
 
 digest_email = ""
 surfacing_stale_days           = 30

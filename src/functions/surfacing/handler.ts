@@ -87,13 +87,13 @@ function findPromotionCandidates(nodes: MetaItem[], edgeCounts: Map<string, numb
   return nodes
     .filter((n) => {
       if (n.status !== "seed") return false;
-      const words = Math.max(n.word_count_es ?? 0, n.word_count_en ?? 0);
+      const words = n.word_count ?? 0;
       const refs = inboundCounts.get(n.slug) ?? 0;
       return words >= PROMOTION_WORDS && refs >= PROMOTION_REFS;
     })
     .map((n) => ({
       slug: n.slug,
-      word_count: Math.max(n.word_count_es ?? 0, n.word_count_en ?? 0),
+      word_count: n.word_count ?? 0,
       ref_count: inboundCounts.get(n.slug) ?? 0,
       edge_count: edgeCounts.get(n.slug) ?? 0,
     }));

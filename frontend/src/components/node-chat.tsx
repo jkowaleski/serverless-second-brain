@@ -44,8 +44,8 @@ export function NodeChat({ slug, node, onUpdate }: { slug: string; node?: { stat
     setMessages((m) => [...m, { id, role: "user", text: msg }]);
     setLoading(true);
     try {
-      const res = await api.nodeChat(slug, msg, locale, token);
-      const reply = locale === "es" ? res.message_es : res.message_en;
+      const res = await api.nodeChat(slug, msg, token);
+      const reply = res.message;
       setMessages((m) => [...m, { id: `r-${id}`, role: "assistant", text: reply || "Done", action: res.action as string }]);
       if (res.action !== "none") onUpdate();
     } catch (err) {

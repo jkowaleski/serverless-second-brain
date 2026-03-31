@@ -3,7 +3,6 @@ import { ValidationError } from "./errors.js";
 
 const SLUG_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const VALID_TYPES = (process.env.NODE_TYPES || "concept,note,experiment,essay").split(",");
-const VALID_LANGUAGES = (process.env.LANGUAGES || "es,en").split(",");
 
 export function validateCaptureRequest(body: unknown): CaptureRequest {
   if (!body || typeof body !== "object") {
@@ -24,15 +23,10 @@ export function validateCaptureRequest(body: unknown): CaptureRequest {
     throw new ValidationError(`type must be one of: ${VALID_TYPES.join(", ")}`);
   }
 
-  if (req.language !== undefined && !VALID_LANGUAGES.includes(req.language as string)) {
-    throw new ValidationError("language must be 'es' or 'en'");
-  }
-
   return {
     text: req.text as string,
     url: req.url as string | undefined,
     type: (req.type as string) ?? "concept",
-    language: (req.language as "es" | "en") ?? "es",
     visibility: (req.visibility as "public" | "private" | undefined),
   };
 }

@@ -76,11 +76,11 @@ def search(query: str, limit: int = 10) -> str:
 
 
 @mcp.tool()
-def add_node(text: str, url: str = "", type: str = "concept", language: str = "es") -> str:
+def add_node(text: str, url: str = "", type: str = "concept") -> str:
     """Create a new knowledge node from text. AI classifies and generates metadata. Starts as 'seed' status."""
     _check_write_limit()
     result = invoke_lambda("capture", {
-        "body": json.dumps({"text": text, "url": url, "type": type, "language": language, "actor": ACTOR}),
+        "body": json.dumps({"text": text, "url": url, "type": type, "actor": ACTOR}),
         "httpMethod": "POST",
     })
     return json.dumps(result, indent=2)

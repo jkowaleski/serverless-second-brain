@@ -22,15 +22,14 @@ This file defines the exact contract for all REST API endpoints. All Lambda hand
 
 ### POST /capture
 
-Creates a new knowledge node. Bedrock classifies the input, generates bilingual content, and persists to DynamoDB + S3.
+Creates a new knowledge node. Bedrock classifies the input, generates content, and persists to DynamoDB + S3.
 
 **Request**:
 ```json
 {
   "text": "string (required, min 10 chars)",
   "url": "string (optional, valid URL)",
-  "type": "string (optional, default: 'concept')",
-  "language": "string (optional, 'es' | 'en', default: 'es')"
+  "type": "string (optional, default: 'concept')"
 }
 ```
 
@@ -42,10 +41,7 @@ Creates a new knowledge node. Bedrock classifies the input, generates bilingual 
   "node_type": "concept",
   "status": "seed",
   "title": "Serverless",
-  "title_es": "Serverless",
-  "title_en": "Serverless",
-  "summary_es": "...",
-  "summary_en": "...",
+  "summary": "...",
   "tags": ["aws", "lambda"],
   "concepts": ["aws-lambda", "aws-api-gateway"],
   "created_at": "2026-03-19T10:30:00Z",
@@ -78,10 +74,7 @@ Hybrid keyword + semantic search across the knowledge graph.
     {
       "id": "serverless",
       "title": "Serverless",
-      "title_es": "Serverless",
-      "title_en": "Serverless",
-      "summary_es": "...",
-      "summary_en": "...",
+      "summary": "...",
       "node_type": "concept",
       "status": "evergreen",
       "tags": ["aws", "lambda"],
@@ -151,17 +144,13 @@ Returns a single node with its metadata, edges, and related nodes.
   "node": {
     "id": "serverless",
     "title": "Serverless",
-    "title_es": "Serverless",
-    "title_en": "Serverless",
-    "summary_es": "...",
-    "summary_en": "...",
+    "summary": "...",
     "node_type": "concept",
     "status": "evergreen",
     "tags": ["aws", "lambda"],
     "created_at": "2026-03-19T10:30:00Z",
     "updated_at": "2026-03-19T10:30:00Z",
-    "word_count_es": 1200,
-    "word_count_en": 1100
+    "word_count": 1200
   },
   "edges": [
     { "target": "aws-lambda", "edge_type": "related", "weight": 1.0 }

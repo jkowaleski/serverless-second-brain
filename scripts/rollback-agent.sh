@@ -106,7 +106,7 @@ for n in nodes:
             '--key', json.dumps({'PK': {'S': rev_pk}, 'SK': {'S': rev_sk}}), '--no-cli-pager'], capture_output=True)
 
     # Delete S3 body
-    for lang_suffix in ['body.mdx', 'body.en.mdx']:
+    for lang_suffix in ['body.mdx']:
         subprocess.run(['aws', 's3', 'rm', f's3://{bucket}/content/{node_type}/{slug}/{lang_suffix}',
             '--region', region], capture_output=True)
 

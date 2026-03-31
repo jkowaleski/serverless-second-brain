@@ -54,21 +54,17 @@ This file defines the exact schema for the DynamoDB knowledge graph table. All c
   "node_type": "concept",
   "status": "seed | growing | evergreen",
   "title": "Serverless",
-  "title_es": "Serverless",
-  "title_en": "Serverless",
-  "summary_es": "...",
-  "summary_en": "...",
+  "summary": "...",
   "tags": ["aws", "lambda", "cloud"],
   "created_at": "2026-03-19T10:30:00Z",
   "updated_at": "2026-03-19T10:30:00Z",
   "created_by": "human | agent",
-  "word_count_es": 1200,
-  "word_count_en": 1100,
+  "word_count": 1200,
   "visibility": "public | private"
 }
 ```
 
-Required fields: `PK`, `SK`, `slug`, `node_type`, `status`, `title`, `title_es`, `title_en`, `summary_es`, `summary_en`, `tags`, `created_at`, `updated_at`.
+Required fields: `PK`, `SK`, `slug`, `node_type`, `status`, `title`, `summary`, `tags`, `created_at`, `updated_at`.
 
 ### EDGE item
 
@@ -96,7 +92,7 @@ Valid `edge_type` values are domain-configurable. Defaults: `related`.
   "model": "amazon.titan-embed-text-v2:0",
   "dimensions": 1024,
   "vector": [0.123, -0.456, ...],
-  "source_text": "title + summary_es + summary_en + tags",
+  "source_text": "title + summary + tags",
   "generated_at": "2026-03-19T10:30:00Z"
 }
 ```
@@ -125,8 +121,7 @@ TTL: 90 days from creation (Unix timestamp). DynamoDB auto-deletes expired items
 ## S3 content bucket
 
 - Bucket name: `{project_name}-{env}-content`
-- Key pattern: `content/{node_type}/{slug}/body.mdx` (Spanish)
-- Key pattern: `content/{node_type}/{slug}/body.en.mdx` (English)
+- Key pattern: `content/{node_type}/{slug}/body.mdx`
 - Versioning: enabled
 - Encryption: SSE-S3
 - Lifecycle: old versions → Glacier after 90 days

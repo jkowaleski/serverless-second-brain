@@ -58,7 +58,7 @@ async function hasEmbed(slug: string): Promise<boolean> {
 
 async function generateAndStore(node: Record<string, unknown>): Promise<boolean> {
   const slug = node.slug as string;
-  const text = `${node.title} ${node.summary_es} ${node.summary_en} ${(node.tags as string[]).join(" ")}`;
+  const text = `${node.title} ${node.summary} ${(node.tags as string[]).join(" ")}`;
 
   if (DRY_RUN) {
     console.log(`  [DRY] Would embed: ${slug}`);

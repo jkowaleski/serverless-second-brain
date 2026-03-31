@@ -57,12 +57,6 @@ variable "cors_allow_origin" {
   default     = "https://jonmatum.com"
 }
 
-variable "languages" {
-  description = "Supported languages for bilingual content (comma-separated)"
-  type        = string
-  default     = "es,en"
-}
-
 variable "surfacing_stale_days" {
   description = "Days before a seed is considered stale"
   type        = number

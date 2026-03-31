@@ -17,7 +17,7 @@ let cachedEmbeddings: EmbedItem[] | null = null;
 let cacheVersion = "";
 
 function keywordScore(node: MetaItem, terms: string[]): number {
-  const text = `${node.title} ${node.title_es} ${node.title_en} ${node.summary_es} ${node.summary_en} ${node.tags.join(" ")}`.toLowerCase();
+  const text = `${node.title} ${node.summary} ${node.tags.join(" ")}`.toLowerCase();
   let matched = 0;
   for (const term of terms) {
     if (text.includes(term)) matched++;
@@ -67,10 +67,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         return {
           id: node.slug,
           title: node.title,
-          title_es: node.title_es,
-          title_en: node.title_en,
-          summary_es: node.summary_es,
-          summary_en: node.summary_en,
+          summary: node.summary,
           node_type: node.node_type,
           status: node.status,
           tags: node.tags,

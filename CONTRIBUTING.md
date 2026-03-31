@@ -52,7 +52,7 @@ Read the specs in `.kiro/steering/` before writing code:
 ## Adding a new domain configuration
 
 1. Create a `.tfvars` file in `examples/` (see `legal.tfvars` for reference)
-2. Set `node_types`, `edge_types`, `languages`, and surfacing thresholds
+2. Set `node_types`, `edge_types`, and surfacing thresholds
 3. Test with `terraform plan -var-file=../../examples/your-domain.tfvars`
 4. Submit a PR with the example config
 

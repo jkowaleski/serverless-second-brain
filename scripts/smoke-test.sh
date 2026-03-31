@@ -140,8 +140,7 @@ else
       -H "Authorization: Bearer $TOKEN" \
       -d "{
         \"text\": \"Smoke test $TIMESTAMP — verifying the capture pipeline processes text through Bedrock classification, DynamoDB persistence, S3 body storage, and edge creation end-to-end.\",
-        \"type\": \"note\",
-        \"language\": \"en\"
+        \"type\": \"note\"
       }")
     cp /tmp/smoke-last.json /tmp/smoke-capture.json 2>/dev/null || true
     CREATED_SLUG=$(python3 -c "import json; d=json.load(open('/tmp/smoke-capture.json')); print(d.get('slug','?') if isinstance(d,dict) else json.loads(d).get('slug','?'))" 2>/dev/null || echo "?")

@@ -30,18 +30,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   return handleCapture(event);
 };
 
-async function handleChat(event: APIGatewayProxyEvent, body: { slug?: string; message?: string; language?: string }): Promise<APIGatewayProxyResult> {
+async function handleChat(event: APIGatewayProxyEvent, body: { slug?: string; message?: string }): Promise<APIGatewayProxyResult> {
   try {
-    const { slug, message, language = "es" } = body;
+    const { slug, message } = body;
     if (!slug || !message) throw new ValidationError("slug and message are required");
 
     const node = await getNode(slug);
     if (!node) throw new NotFoundError(`Node '${slug}' not found`);
 
-    const [bodyEs, bodyEn] = await Promise.all([
-      getBody(node.node_type, slug, "es").catch(() => ""),
-      getBody(node.node_type, slug, "en").catch(() => ""),
-    ]);
+    const bodyContent = await getBody(node.node_type, slug).catch(() => "");
 
     const edges = await getNodeEdges(slug);
     const edgeSlugs = edges.map((e) => fromEdgeKey(e.SK));
@@ -49,23 +46,18 @@ async function handleChat(event: APIGatewayProxyEvent, body: { slug?: string; me
     const context: NodeContext = {
       slug, node_type: node.node_type, status: node.status,
       visibility: node.visibility ?? "private",
-      title: node.title, title_es: node.title_es, title_en: node.title_en,
-      summary_es: node.summary_es, summary_en: node.summary_en,
-      tags: node.tags, body_es: bodyEs || "", body_en: bodyEn || "",
+      title: node.title, summary: node.summary,
+      tags: node.tags, body: bodyContent || "",
       edges: edgeSlugs,
     };
 
-    const result = await nodeChat(message, context, language);
+    const result = await nodeChat(message, context);
     const now = new Date().toISOString();
 
-    if (result.action === "update_body" && result.body_es && result.body_en) {
-      await Promise.all([
-        putBody(node.node_type, slug, result.body_es, "es"),
-        putBody(node.node_type, slug, result.body_en, "en"),
-      ]);
-      const wcEs = result.body_es.split(/\s+/).filter(Boolean).length;
-      const wcEn = result.body_en.split(/\s+/).filter(Boolean).length;
-      await updateNodeMeta(slug, { word_count_es: wcEs, word_count_en: wcEn });
+    if (result.action === "update_body" && result.body) {
+      await putBody(node.node_type, slug, result.body);
+      const wc = result.body.split(/\s+/).filter(Boolean).length;
+      await updateNodeMeta(slug, { word_count: wc });
     }
 
     if (result.action === "update_meta" && result.meta) {
@@ -142,7 +134,7 @@ async function handleCapture(event: APIGatewayProxyEvent): Promise<APIGatewayPro
     const recentSlugs = await listNodeSlugs(20);
 
     // Phase 1: fast classify — metadata only
-    const metadata = await classify(input.text, recentSlugs, input.language ?? "es");
+    const metadata = await classify(input.text, recentSlugs);
     const slug = generateSlug(metadata.title);
     const now = new Date().toISOString();
     const validTypes = ["concept", "note", "experiment", "essay"];
@@ -163,16 +155,12 @@ async function handleCapture(event: APIGatewayProxyEvent): Promise<APIGatewayPro
       status: "seed",
       visibility: input.visibility ?? defaultVisibility,
       title: metadata.title,
-      title_es: metadata.title_es,
-      title_en: metadata.title_en,
-      summary_es: metadata.summary_es,
-      summary_en: metadata.summary_en,
+      summary: metadata.summary,
       tags: metadata.tags,
       created_at: now,
       updated_at: now,
       created_by: actor,
-      word_count_es: 0,
-      word_count_en: 0,
+      word_count: 0,
     };
 
     try {
@@ -205,10 +193,8 @@ async function handleCapture(event: APIGatewayProxyEvent): Promise<APIGatewayPro
           slug,
           text: input.text,
           node_type: nodeType,
-          title_es: metadata.title_es,
-          title_en: metadata.title_en,
-          summary_es: metadata.summary_es,
-          summary_en: metadata.summary_en,
+          title: metadata.title,
+          summary: metadata.summary,
           tags: metadata.tags,
           concepts: metadata.concepts,
           actor,
@@ -222,10 +208,7 @@ async function handleCapture(event: APIGatewayProxyEvent): Promise<APIGatewayPro
       node_type: nodeType,
       status: "seed",
       title: metadata.title,
-      title_es: metadata.title_es,
-      title_en: metadata.title_en,
-      summary_es: metadata.summary_es,
-      summary_en: metadata.summary_en,
+      summary: metadata.summary,
       tags: metadata.tags,
       concepts: metadata.concepts,
       created_at: now,

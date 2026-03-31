@@ -67,7 +67,6 @@ docs/
 - **Auth**: GitHub Actions OIDC for CI/CD — no static AWS credentials
 - **Runtime**: Node.js 22.x, TypeScript strict mode for all Lambda functions
 - **IaC**: Terraform for all infrastructure, no ClickOps
-- **Bilingual**: all content supports Spanish (primary) and English
 
 ## MCP write safety
 

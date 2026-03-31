@@ -61,7 +61,6 @@ locals {
     BEDROCK_EMBEDDING_MODEL_ID = var.bedrock_embedding_model_id
     ENVIRONMENT                = var.environment
     NODE_TYPES                 = join(",", var.node_types)
-    LANGUAGES                  = var.languages
     DEFAULT_VISIBILITY         = var.default_visibility
   }
   capture_policies = [
@@ -305,7 +304,6 @@ module "agentcore_gateway" {
         properties = [
           { name = "slug", type = "string", description = "Node slug (e.g., 'concepts-serverless')", required = true },
           { name = "include_body", type = "boolean", description = "Include full MDX body from S3" },
-          { name = "language", type = "string", description = "Language for body: es or en" },
         ]
       }
     }
@@ -333,13 +331,12 @@ module "agentcore_gateway" {
     }
     add-node = {
       lambda_arn  = module.capture_lambda.function_arn
-      description = "Create a new seed knowledge node. AI classifies content and generates bilingual metadata."
+      description = "Create a new seed knowledge node. AI classifies content and generates metadata."
       input_schema = {
         properties = [
           { name = "text", type = "string", description = "Content text (min 50 chars)", required = true },
           { name = "url", type = "string", description = "Optional source URL" },
           { name = "type", type = "string", description = "Node type (default: concept)" },
-          { name = "language", type = "string", description = "Content language: es or en" },
         ]
       }
     }

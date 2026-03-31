@@ -30,12 +30,12 @@ export default function NodePage() {
   useEffect(() => {
     if (!slug || authLoading) return;
     loadNode();
-  }, [slug, locale, token, authLoading]);
+  }, [slug, token, authLoading]);
 
   function loadNode() {
     setData(null);
     setError("");
-    api.node(slug, { include_body: true, language: locale }, token).then(setData).catch((e) => setError(e.message));
+    api.node(slug, { include_body: true }, token).then(setData).catch((e) => setError(e.message));
   }
 
   if (!slug) return <p className="py-12 text-center text-[var(--color-muted)]">{t("node.empty", locale)}</p>;
@@ -45,7 +45,7 @@ export default function NodePage() {
   const { node, edges, related, body } = data;
   const section = TYPE_TO_SECTION[node.node_type] ?? "concepts";
 
-  const readableText = body || `${localized(node, "summary", locale)}`;
+  const readableText = body || node.summary;
 
   return (
     <article className="space-y-8">
@@ -70,23 +70,11 @@ export default function NodePage() {
       {/* Body content */}
       {body ? (
         <MarkdownBody content={body} />
-      ) : node.word_count_es === 0 ? (
+      ) : node.word_count === 0 ? (
         <div className="rounded-lg border border-dashed border-[var(--color-border)] p-6 text-center text-sm text-[var(--color-muted)]">
           {t("node.enriching", locale)}
         </div>
-      ) : (
-        /* Bilingual summaries fallback when no body */
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-lg border border-[var(--color-border)] p-4 space-y-2">
-            <h2 className="text-xs font-medium text-[var(--color-muted)] uppercase tracking-wider">{t("node.summary_es", locale)}</h2>
-            <p className="text-sm leading-relaxed">{localized(node, "summary", "es")}</p>
-          </div>
-          <div className="rounded-lg border border-[var(--color-border)] p-4 space-y-2">
-            <h2 className="text-xs font-medium text-[var(--color-muted)] uppercase tracking-wider">{t("node.summary_en", locale)}</h2>
-            <p className="text-sm leading-relaxed">{localized(node, "summary", "en")}</p>
-          </div>
-        </div>
-      )}
+      ) : null}
 
       {/* Related — matching jonmatum.com */}
       {related.length > 0 && (

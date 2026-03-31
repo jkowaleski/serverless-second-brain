@@ -12,37 +12,31 @@ interface EnrichEvent {
   slug: string;
   text: string;
   node_type: string;
-  title_es: string;
-  title_en: string;
-  summary_es: string;
-  summary_en: string;
+  title: string;
+  summary: string;
   tags: string[];
   concepts: string[];
   actor: string;
 }
 
 export const handler = async (event: EnrichEvent): Promise<void> => {
-  const { slug, text, node_type, title_es, title_en, summary_es, summary_en, tags, concepts, actor } = event;
+  const { slug, text, node_type, title, summary, tags, concepts, actor } = event;
   const now = new Date().toISOString();
 
   console.log(JSON.stringify({ event: "enrich_start", slug }));
 
-  // Generate bilingual body
-  const { body_es, body_en } = await generateBody(text, node_type, title_es, title_en, tags);
+  // Generate body
+  const { body } = await generateBody(text, node_type, title, tags);
 
   // Write body to S3
-  await Promise.all([
-    putBody(node_type, slug, body_es, "es"),
-    putBody(node_type, slug, body_en, "en"),
-  ]);
+  await putBody(node_type, slug, body);
 
-  // Update word counts on META
-  const wcEs = body_es.split(/\s+/).filter(Boolean).length;
-  const wcEn = body_en.split(/\s+/).filter(Boolean).length;
-  await updateNodeMeta(slug, { word_count_es: wcEs, word_count_en: wcEn });
+  // Update word count on META
+  const wc = body.split(/\s+/).filter(Boolean).length;
+  await updateNodeMeta(slug, { word_count: wc });
 
   // Generate embedding from combined text
-  const embedText = `${title_es} ${title_en} ${summary_es} ${summary_en} ${tags.join(" ")}`;
+  const embedText = `${title} ${summary} ${tags.join(" ")}`;
   const vector = await embed(embedText);
 
   const embedItem: EmbedItem = {
@@ -67,5 +61,5 @@ export const handler = async (event: EnrichEvent): Promise<void> => {
   }
 
   await bumpCacheVersion();
-  console.log(JSON.stringify({ event: "enrich_complete", slug, word_count_es: wcEs, word_count_en: wcEn, edges: concepts.length }));
+  console.log(JSON.stringify({ event: "enrich_complete", slug, word_count: wc, edges: concepts.length }));
 };

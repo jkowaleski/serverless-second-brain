@@ -108,20 +108,20 @@ export default function Dashboard() {
 
       {/* Most connected */}
       <DashboardList locale={locale} title={t("dashboard.most_connected", locale)} items={topConnected.map((n) => ({
-        id: n.id, title: n.title, title_es: n.title_es, title_en: n.title_en, type: n.node_type, status: n.status, right: String(n.edge_count),
+        id: n.id, title: n.title, type: n.node_type, status: n.status, right: String(n.edge_count),
       }))} />
 
       {/* Seeds to grow */}
       {seeds.length > 0 && (
         <DashboardList locale={locale} title={`${t("dashboard.seeds", locale)} (${seeds.length})`} items={seeds.map((n) => ({
-          id: n.id, title: n.title, title_es: n.title_es, title_en: n.title_en, type: n.node_type, status: n.status,
+          id: n.id, title: n.title, type: n.node_type, status: n.status,
         }))} />
       )}
 
       {/* Needs attention */}
       {needsAttention.length > 0 && (
         <DashboardList locale={locale} title={`${t("dashboard.needs_attention", locale)} (${needsAttention.length})`} items={needsAttention.map((n) => ({
-          id: n.id, title: n.title, title_es: n.title_es, title_en: n.title_en, type: n.node_type, status: n.status,
+          id: n.id, title: n.title, type: n.node_type, status: n.status,
           right: n.edge_count === 0 ? (locale === "es" ? "hu\u00e9rfano" : "orphan") : String(n.edge_count),
         }))} />
       )}
@@ -129,20 +129,19 @@ export default function Dashboard() {
   );
 }
 
-function DashboardList({ title, items, locale }: { title: string; locale: string; items: { id: string; title: string; title_es?: string; title_en?: string; type: string; status: string; right?: string }[] }) {
+function DashboardList({ title, items, locale }: { title: string; locale: string; items: { id: string; title: string; type: string; status: string; right?: string }[] }) {
   return (
     <section className="space-y-3">
       <h2 className="text-sm font-medium text-[var(--color-muted)]">{title}</h2>
       <ul className="space-y-1">
         {items.map((n) => {
-          const label = localized(n, "title", locale as "es" | "en");
           return (
             <li key={n.id}>
               <Link to={`/node?id=${n.id}`} className="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-[var(--color-border)]">
                 <span className="mt-0.5 shrink-0"><TypeIcon type={n.type} /></span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-1.5">
-                    <span className="truncate">{label}</span>
+                    <span className="truncate">{n.title}</span>
                     <StatusBadge status={n.status} />
                   </span>
                 </span>

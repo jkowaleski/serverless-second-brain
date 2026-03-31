@@ -9,6 +9,5 @@ cognito_callback_urls = ["http://localhost:5173/callback"]
 cognito_logout_urls   = ["http://localhost:5173"]
 
 # Optional — defaults work for most setups
-# languages          = "es,en"
 # default_visibility = "private"
 # bedrock_model_id   = "us.anthropic.claude-sonnet-4-20250514-v1:0"

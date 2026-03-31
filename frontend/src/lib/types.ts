@@ -1,10 +1,7 @@
 export interface GraphNode {
   id: string;
   title: string;
-  title_es?: string;
-  title_en?: string;
-  summary_es?: string;
-  summary_en?: string;
+  summary?: string;
   node_type: "concept" | "note" | "experiment" | "essay";
   status: "seed" | "growing" | "evergreen";
   tags: string[];
@@ -28,10 +25,7 @@ export interface GraphResponse {
 export interface SearchResult {
   id: string;
   title: string;
-  title_es: string;
-  title_en: string;
-  summary_es: string;
-  summary_en: string;
+  summary: string;
   node_type: string;
   status: string;
   tags: string[];
@@ -50,17 +44,13 @@ export interface SearchResponse {
 export interface NodeDetail {
   id: string;
   title: string;
-  title_es: string;
-  title_en: string;
-  summary_es: string;
-  summary_en: string;
+  summary: string;
   node_type: string;
   status: string;
   tags: string[];
   created_at: string;
   updated_at: string;
-  word_count_es?: number;
-  word_count_en?: number;
+  word_count?: number;
 }
 
 export interface NodeEdge {
@@ -72,10 +62,7 @@ export interface NodeEdge {
 export interface RelatedNode {
   id: string;
   title: string;
-  title_es?: string;
-  title_en?: string;
-  summary_es?: string;
-  summary_en?: string;
+  summary?: string;
   node_type: string;
   status: string;
 }

@@ -6,7 +6,6 @@ environment  = "dev"
 
 node_types = ["paper", "experiment", "dataset", "hypothesis", "result"]
 edge_types = ["reproduces", "refutes", "extends", "uses_dataset", "inspired_by"]
-languages  = "en"
 
 digest_email = ""
 surfacing_stale_days           = 14

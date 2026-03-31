@@ -31,8 +31,8 @@ function ResponseSkeleton() {
 }
 
 interface CaptureResult {
-  slug: string; title: string; title_es?: string; title_en?: string;
-  summary_es?: string; summary_en?: string; node_type: string; status: string; tags: string[];
+  slug: string; title: string; summary?: string;
+  node_type: string; status: string; tags: string[];
 }
 
 interface Message {
@@ -92,7 +92,7 @@ export default function Capture() {
     setText("");
     setMessages((m) => [...m, { id, text: input, loading: true }]);
     try {
-      const raw = await api.capture({ text: input, type: nodeType, visibility: "private", language: locale }, token);
+      const raw = await api.capture({ text: input, type: nodeType, visibility: "private" }, token);
       const node = (typeof raw === "string" ? JSON.parse(raw) : raw) as CaptureResult;
       setMessages((m) => m.map((msg) =>
         msg.id === id ? { ...msg, loading: false, result: node, visibility: "private", visibilityPending: true } : msg
@@ -158,12 +158,12 @@ export default function Capture() {
               <div className="max-w-full space-y-3 sm:max-w-[85%]">
                 <div className="rounded-lg border border-[var(--color-border)] p-3 space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium text-sm">{localized(msg.result, "title", locale) || msg.result.title}</span>
+                    <span className="font-medium text-sm">{msg.result.title}</span>
                     <TypeBadge type={msg.result.node_type} />
                     <StatusBadge status={msg.result.status} />
                   </div>
-                  {(msg.result.summary_es || msg.result.summary_en) && (
-                    <p className="text-xs text-[var(--color-muted)] line-clamp-2">{localized(msg.result, "summary", locale)}</p>
+                  {msg.result.summary && (
+                    <p className="text-xs text-[var(--color-muted)] line-clamp-2">{msg.result.summary}</p>
                   )}
                   <div className="flex flex-wrap gap-1"><TagList tags={msg.result.tags} /></div>
                   <div className="flex items-center gap-3">
