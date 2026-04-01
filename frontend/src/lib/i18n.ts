@@ -134,7 +134,7 @@ const dict = {
   // Common
   "common.loading": { es: "Cargando\u2026", en: "Loading\u2026" },
   "common.error": { es: "Error: {msg}", en: "Error: {msg}" },
-  "footer": { es: "© Jonatan Mata", en: "© Jonatan Mata" },
+  "footer": { es: "© Second Brain", en: "© Second Brain" },
 
   // Auth
   "auth.login": { es: "Iniciar sesi\u00f3n", en: "Log in" },

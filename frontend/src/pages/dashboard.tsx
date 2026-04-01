@@ -58,7 +58,7 @@ export default function Dashboard() {
         <p className="mt-1 text-sm text-[var(--color-muted)]">{data.meta.node_count} {t("dashboard.nodes", locale)}, {data.meta.edge_count} {t("dashboard.edges", locale)}</p>
       </div>
 
-      {/* Overview grid — matching jonmatum.com */}
+      {/* Overview grid */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {TYPES.map((tp) => (
           <Link key={tp} to={`/${tp}s`} className="rounded-lg border border-[var(--color-border)] p-4 text-center transition-colors hover:border-[var(--color-muted)]">

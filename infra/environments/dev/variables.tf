@@ -48,13 +48,13 @@ variable "bedrock_embedding_model_id" {
 variable "digest_email" {
   description = "Email address for daily digest notifications"
   type        = string
-  default     = "jonmatum@gmail.com"
+  default     = ""
 }
 
 variable "cors_allow_origin" {
   description = "CORS allowed origin for API Gateway"
   type        = string
-  default     = "https://d3k7drew8lusx6.cloudfront.net"
+  default     = "*"
 }
 
 variable "surfacing_stale_days" {
@@ -89,13 +89,13 @@ variable "default_visibility" {
 variable "cognito_callback_urls" {
   description = "Allowed OAuth callback URLs for frontend"
   type        = list(string)
-  default     = ["http://localhost:3000/callback", "https://d3k7drew8lusx6.cloudfront.net/callback"]
+  default     = ["http://localhost:3000/callback"]
 }
 
 variable "cognito_logout_urls" {
   description = "Allowed OAuth logout URLs"
   type        = list(string)
-  default     = ["http://localhost:3000", "https://d3k7drew8lusx6.cloudfront.net"]
+  default     = ["http://localhost:3000"]
 }
 
 variable "allow_self_signup" {

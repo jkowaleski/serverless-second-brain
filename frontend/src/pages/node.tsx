@@ -76,7 +76,7 @@ export default function NodePage() {
         </div>
       ) : null}
 
-      {/* Related — matching jonmatum.com */}
+      {/* Related */}
       {related.length > 0 && (
         <section className="space-y-3 border-t border-[var(--color-border)] pt-8">
           <h2 className="text-sm font-medium text-[var(--color-muted)]">

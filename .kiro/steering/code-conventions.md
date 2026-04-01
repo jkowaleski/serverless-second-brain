@@ -92,7 +92,7 @@ Lambda functions receive configuration via environment variables:
 | `BUCKET_NAME` | Capture, Graph | S3 content bucket name |
 | `BEDROCK_MODEL_ID` | Capture | Claude model ID for classification |
 | `BEDROCK_EMBEDDING_MODEL_ID` | Capture, Search | Titan model ID for embeddings |
-| `CORS_ALLOW_ORIGIN` | Search, Graph | CORS allowed origin (dev: `*`, prod: `https://jonmatum.com`) |
+| `CORS_ALLOW_ORIGIN` | Search, Graph | CORS allowed origin (dev: `*`, prod: custom domain) |
 | `ENRICH_FUNCTION_NAME` | Capture | Enrich Lambda function name for async invocation |
 | `SNS_DIGEST_TOPIC_ARN` | Surfacing | SNS topic for daily digest |
 | `ENVIRONMENT` | All | `dev` or `prod` |

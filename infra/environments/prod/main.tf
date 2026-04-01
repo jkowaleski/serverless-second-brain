@@ -2,10 +2,10 @@ terraform {
   required_version = ">= 1.5"
 
   backend "s3" {
-    bucket         = "ssb-terraform-state"
-    key            = "ssb/prod/terraform.tfstate"
+    bucket         = "serverless-brain-terraform-state"
+    key            = "serverless-brain/prod/terraform.tfstate"
     region         = "us-east-1"
-    dynamodb_table = "ssb-terraform-lock"
+    dynamodb_table = "serverless-brain-terraform-lock"
     encrypt        = true
   }
 

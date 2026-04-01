@@ -48,13 +48,13 @@ variable "bedrock_embedding_model_id" {
 variable "digest_email" {
   description = "Email address for daily digest notifications"
   type        = string
-  default     = "jonmatum@gmail.com"
+  default     = ""
 }
 
 variable "cors_allow_origin" {
   description = "CORS allowed origin for API Gateway"
   type        = string
-  default     = "https://jonmatum.com"
+  default     = ""
 }
 
 variable "surfacing_stale_days" {

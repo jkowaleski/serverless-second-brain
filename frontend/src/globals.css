@@ -97,7 +97,7 @@
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.708 0 0);
 
-    /* jonmatum.com design tokens */
+    /* design tokens */
     --color-bg: #fafafa;
     --color-fg: #171717;
     --color-muted: #737373;
@@ -138,7 +138,7 @@
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
 
-    /* jonmatum.com dark tokens */
+    /* dark tokens */
     --color-bg: #0a0a0a;
     --color-fg: #ededed;
     --color-muted: #a3a3a3;
@@ -169,12 +169,12 @@
   }
 }
 
-/* Justified text on main content — matching jonmatum.com */
+/* Justified text on main content */
 main {
   text-align: justify;
 }
 
-/* Minimal scrollbar matching jonmatum.com */
+/* Minimal scrollbar */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;
@@ -235,7 +235,7 @@ main {
   --tw-prose-invert-td-borders: var(--color-border);
 }
 
-/* Prose code styling — matching jonmatum.com */
+/* Prose code styling */
 .prose pre {
   background: var(--color-code-bg, #f0f0f0);
   border: 1px solid var(--color-border);
@@ -297,7 +297,7 @@ main {
   --color-code-bg: #161616;
 }
 
-/* Images — responsive, rounded, matching jonmatum.com */
+/* Images — responsive, rounded */
 .prose img {
   max-width: 100%;
   height: auto;
